@@ -1,0 +1,368 @@
+24/01/22 13:43:06 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+24/01/22 13:43:08 WARN Client: Neither spark.yarn.jars nor spark.yarn.archive is set, falling back to uploading libraries under SPARK_HOME.
+==============Broadcast Join===============
+Maximum wage
++----------------------+---+
+|Vict Descent          |#  |
++----------------------+---+
+|White                 |763|
+|Other                 |318|
+|Hispanic/Latin/Mexican|123|
+|Black                 |44 |
+|Other Asian           |24 |
+|Chinese               |2  |
++----------------------+---+
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [##116L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(##116L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=384]
+      +- HashAggregate(keys=[Vict Descent#80], functions=[count(1)])
+         +- Exchange hashpartitioning(Vict Descent#80, 200), ENSURE_REQUIREMENTS, [plan_id=381]
+            +- HashAggregate(keys=[Vict Descent#80], functions=[partial_count(1)])
+               +- Project [Vict Descent#80]
+                  +- BroadcastHashJoin [ZIPcode#89], [ZIPcode#62], Inner, BuildRight, false
+                     :- Project [Vict Descent#80, ZIPcode#89]
+                     :  +- BroadcastHashJoin [knownfloatingpointnormalized(normalizenanandzero(LAT#26)), knownfloatingpointnormalized(normalizenanandzero(LON#27))], [knownfloatingpointnormalized(normalizenanandzero(LAT#56)), knownfloatingpointnormalized(normalizenanandzero(LON#57))], Inner, BuildRight, false
+                     :     :- Project [pythonUDF0#152 AS Vict Descent#80, LAT#26, LON#27]
+                     :     :  +- BatchEvalPython [get_race(Vict Descent#13)#79], [pythonUDF0#152]
+                     :     :     +- Project [Vict Descent#13, LAT#26, LON#27]
+                     :     :        +- Filter (((((isnotnull(Vict Descent#13) AND NOT (Vict Descent#13 = )) AND NOT (Vict Descent#13 = X)) AND (year(cast(gettimestamp(DATE OCC#2, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) = 2015)) AND isnotnull(LAT#26)) AND isnotnull(LON#27))
+                     :     :           +- FileScan csv [DATE OCC#2,Vict Descent#13,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(Vict Descent#13), NOT (Vict Descent#13 = ), NOT (Vict Descent#13 = X), (year(cast(gett..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(Vict Descent), Not(EqualTo(Vict Descent,)), Not(EqualTo(Vict Descent,X)), IsNotNull(LA..., ReadSchema: struct<DATE OCC:string,Vict Descent:string,LAT:double,LON:double>
+                     :     +- BroadcastExchange HashedRelationBroadcastMode(List(knownfloatingpointnormalized(normalizenanandzero(input[0, double, true])), knownfloatingpointnormalized(normalizenanandzero(input[1, double, true]))),false), [plan_id=372]
+                     :        +- Project [LAT#56, LON#57, substring(ZIPcode#58, 1, 5) AS ZIPcode#89]
+                     :           +- Filter ((isnotnull(LAT#56) AND isnotnull(LON#57)) AND isnotnull(substring(ZIPcode#58, 1, 5)))
+                     :              +- FileScan csv [LAT#56,LON#57,ZIPcode#58] Batched: false, DataFilters: [isnotnull(LAT#56), isnotnull(LON#57), isnotnull(substring(ZIPcode#58, 1, 5))], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/revgecoding.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON)], ReadSchema: struct<LAT:double,LON:double,ZIPcode:string>
+                     +- BroadcastExchange HashedRelationBroadcastMode(List(input[0, string, false]),false), [plan_id=376]
+                        +- Filter isnotnull(ZIPcode#62)
+                           +- TakeOrderedAndProject(limit=3, orderBy=[Income Int#101 DESC NULLS LAST], output=[ZIPcode#62])
+                              +- Project [ZIPcode#62, cast(regexp_replace(substring(Income#64, 2, 2147483647), ,, , 1) as int) AS Income Int#101]
+                                 +- Filter (isnotnull(Community#63) AND Contains(Community#63, Los Angeles))
+                                    +- FileScan csv [ZIPcode#62,Community#63,Income#64] Batched: false, DataFilters: [isnotnull(Community#63), Contains(Community#63, Los Angeles)], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/income/LA_inco..., PartitionFilters: [], PushedFilters: [IsNotNull(Community), StringContains(Community,Los Angeles)], ReadSchema: struct<ZIPcode:string,Community:string,Income:string>
+
+
+Minimum wage
++------------------------------+----+
+|Vict Descent                  |#   |
++------------------------------+----+
+|Hispanic/Latin/Mexican        |1550|
+|Black                         |1094|
+|White                         |705 |
+|Other                         |400 |
+|Other Asian                   |104 |
+|Korean                        |9   |
+|American Indian/Alaskan Native|3   |
+|Japanese                      |3   |
+|Chinese                       |2   |
+|Filipino                      |2   |
++------------------------------+----+
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [##127L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(##127L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=770]
+      +- HashAggregate(keys=[Vict Descent#80], functions=[count(1)])
+         +- Exchange hashpartitioning(Vict Descent#80, 200), ENSURE_REQUIREMENTS, [plan_id=767]
+            +- HashAggregate(keys=[Vict Descent#80], functions=[partial_count(1)])
+               +- Project [Vict Descent#80]
+                  +- BroadcastHashJoin [ZIPcode#89], [ZIPcode#62], Inner, BuildRight, false
+                     :- Project [Vict Descent#80, ZIPcode#89]
+                     :  +- BroadcastHashJoin [knownfloatingpointnormalized(normalizenanandzero(LAT#26)), knownfloatingpointnormalized(normalizenanandzero(LON#27))], [knownfloatingpointnormalized(normalizenanandzero(LAT#56)), knownfloatingpointnormalized(normalizenanandzero(LON#57))], Inner, BuildRight, false
+                     :     :- Project [pythonUDF0#175 AS Vict Descent#80, LAT#26, LON#27]
+                     :     :  +- BatchEvalPython [get_race(Vict Descent#13)#79], [pythonUDF0#175]
+                     :     :     +- Project [Vict Descent#13, LAT#26, LON#27]
+                     :     :        +- Filter (((((isnotnull(Vict Descent#13) AND NOT (Vict Descent#13 = )) AND NOT (Vict Descent#13 = X)) AND (year(cast(gettimestamp(DATE OCC#2, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) = 2015)) AND isnotnull(LAT#26)) AND isnotnull(LON#27))
+                     :     :           +- FileScan csv [DATE OCC#2,Vict Descent#13,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(Vict Descent#13), NOT (Vict Descent#13 = ), NOT (Vict Descent#13 = X), (year(cast(gett..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(Vict Descent), Not(EqualTo(Vict Descent,)), Not(EqualTo(Vict Descent,X)), IsNotNull(LA..., ReadSchema: struct<DATE OCC:string,Vict Descent:string,LAT:double,LON:double>
+                     :     +- BroadcastExchange HashedRelationBroadcastMode(List(knownfloatingpointnormalized(normalizenanandzero(input[0, double, true])), knownfloatingpointnormalized(normalizenanandzero(input[1, double, true]))),false), [plan_id=758]
+                     :        +- Project [LAT#56, LON#57, substring(ZIPcode#58, 1, 5) AS ZIPcode#89]
+                     :           +- Filter ((isnotnull(LAT#56) AND isnotnull(LON#57)) AND isnotnull(substring(ZIPcode#58, 1, 5)))
+                     :              +- FileScan csv [LAT#56,LON#57,ZIPcode#58] Batched: false, DataFilters: [isnotnull(LAT#56), isnotnull(LON#57), isnotnull(substring(ZIPcode#58, 1, 5))], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/revgecoding.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON)], ReadSchema: struct<LAT:double,LON:double,ZIPcode:string>
+                     +- BroadcastExchange HashedRelationBroadcastMode(List(input[0, string, false]),false), [plan_id=762]
+                        +- Filter isnotnull(ZIPcode#62)
+                           +- TakeOrderedAndProject(limit=3, orderBy=[Income Int#101 ASC NULLS FIRST], output=[ZIPcode#62])
+                              +- Project [ZIPcode#62, cast(regexp_replace(substring(Income#64, 2, 2147483647), ,, , 1) as int) AS Income Int#101]
+                                 +- Filter (isnotnull(Community#63) AND Contains(Community#63, Los Angeles))
+                                    +- FileScan csv [ZIPcode#62,Community#63,Income#64] Batched: false, DataFilters: [isnotnull(Community#63), Contains(Community#63, Los Angeles)], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/income/LA_inco..., PartitionFilters: [], PushedFilters: [IsNotNull(Community), StringContains(Community,Los Angeles)], ReadSchema: struct<ZIPcode:string,Community:string,Income:string>
+
+
+Time needed: 19.267197370529175
+
+
+==============Merge Join===============
+
+Maximum wage
++----------------------+---+
+|Vict Descent          |#  |
++----------------------+---+
+|White                 |763|
+|Other                 |318|
+|Hispanic/Latin/Mexican|123|
+|Black                 |44 |
+|Other Asian           |24 |
+|Chinese               |2  |
++----------------------+---+
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [##197L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(##197L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=1360]
+      +- HashAggregate(keys=[Vict Descent#80], functions=[count(1)])
+         +- Exchange hashpartitioning(Vict Descent#80, 200), ENSURE_REQUIREMENTS, [plan_id=1357]
+            +- HashAggregate(keys=[Vict Descent#80], functions=[partial_count(1)])
+               +- Project [Vict Descent#80]
+                  +- SortMergeJoin [ZIPcode#89], [ZIPcode#62], Inner
+                     :- Sort [ZIPcode#89 ASC NULLS FIRST], false, 0
+                     :  +- Exchange hashpartitioning(ZIPcode#89, 200), ENSURE_REQUIREMENTS, [plan_id=1349]
+                     :     +- Project [Vict Descent#80, ZIPcode#89]
+                     :        +- SortMergeJoin [knownfloatingpointnormalized(normalizenanandzero(LAT#26)), knownfloatingpointnormalized(normalizenanandzero(LON#27))], [knownfloatingpointnormalized(normalizenanandzero(LAT#56)), knownfloatingpointnormalized(normalizenanandzero(LON#57))], Inner
+                     :           :- Sort [knownfloatingpointnormalized(normalizenanandzero(LAT#26)) ASC NULLS FIRST, knownfloatingpointnormalized(normalizenanandzero(LON#27)) ASC NULLS FIRST], false, 0
+                     :           :  +- Exchange hashpartitioning(knownfloatingpointnormalized(normalizenanandzero(LAT#26)), knownfloatingpointnormalized(normalizenanandzero(LON#27)), 200), ENSURE_REQUIREMENTS, [plan_id=1341]
+                     :           :     +- Project [pythonUDF0#233 AS Vict Descent#80, LAT#26, LON#27]
+                     :           :        +- BatchEvalPython [get_race(Vict Descent#13)#79], [pythonUDF0#233]
+                     :           :           +- Project [Vict Descent#13, LAT#26, LON#27]
+                     :           :              +- Filter (((((isnotnull(Vict Descent#13) AND NOT (Vict Descent#13 = )) AND NOT (Vict Descent#13 = X)) AND (year(cast(gettimestamp(DATE OCC#2, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) = 2015)) AND isnotnull(LAT#26)) AND isnotnull(LON#27))
+                     :           :                 +- FileScan csv [DATE OCC#2,Vict Descent#13,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(Vict Descent#13), NOT (Vict Descent#13 = ), NOT (Vict Descent#13 = X), (year(cast(gett..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(Vict Descent), Not(EqualTo(Vict Descent,)), Not(EqualTo(Vict Descent,X)), IsNotNull(LA..., ReadSchema: struct<DATE OCC:string,Vict Descent:string,LAT:double,LON:double>
+                     :           +- Sort [knownfloatingpointnormalized(normalizenanandzero(LAT#56)) ASC NULLS FIRST, knownfloatingpointnormalized(normalizenanandzero(LON#57)) ASC NULLS FIRST], false, 0
+                     :              +- Exchange hashpartitioning(knownfloatingpointnormalized(normalizenanandzero(LAT#56)), knownfloatingpointnormalized(normalizenanandzero(LON#57)), 200), ENSURE_REQUIREMENTS, [plan_id=1342]
+                     :                 +- Project [LAT#56, LON#57, substring(ZIPcode#58, 1, 5) AS ZIPcode#89]
+                     :                    +- Filter ((isnotnull(LAT#56) AND isnotnull(LON#57)) AND isnotnull(substring(ZIPcode#58, 1, 5)))
+                     :                       +- FileScan csv [LAT#56,LON#57,ZIPcode#58] Batched: false, DataFilters: [isnotnull(LAT#56), isnotnull(LON#57), isnotnull(substring(ZIPcode#58, 1, 5))], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/revgecoding.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON)], ReadSchema: struct<LAT:double,LON:double,ZIPcode:string>
+                     +- Sort [ZIPcode#62 ASC NULLS FIRST], false, 0
+                        +- Exchange hashpartitioning(ZIPcode#62, 200), ENSURE_REQUIREMENTS, [plan_id=1350]
+                           +- Filter isnotnull(ZIPcode#62)
+                              +- TakeOrderedAndProject(limit=3, orderBy=[Income Int#182 DESC NULLS LAST], output=[ZIPcode#62])
+                                 +- Project [ZIPcode#62, cast(regexp_replace(substring(Income#64, 2, 2147483647), ,, , 1) as int) AS Income Int#182]
+                                    +- Filter (isnotnull(Community#63) AND Contains(Community#63, Los Angeles))
+                                       +- FileScan csv [ZIPcode#62,Community#63,Income#64] Batched: false, DataFilters: [isnotnull(Community#63), Contains(Community#63, Los Angeles)], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/income/LA_inco..., PartitionFilters: [], PushedFilters: [IsNotNull(Community), StringContains(Community,Los Angeles)], ReadSchema: struct<ZIPcode:string,Community:string,Income:string>
+
+
+Minimum wage
++------------------------------+----+
+|Vict Descent                  |#   |
++------------------------------+----+
+|Hispanic/Latin/Mexican        |1550|
+|Black                         |1094|
+|White                         |705 |
+|Other                         |400 |
+|Other Asian                   |104 |
+|Korean                        |9   |
+|American Indian/Alaskan Native|3   |
+|Japanese                      |3   |
+|Chinese                       |2   |
+|Filipino                      |2   |
++------------------------------+----+
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [##208L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(##208L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=1950]
+      +- HashAggregate(keys=[Vict Descent#80], functions=[count(1)])
+         +- Exchange hashpartitioning(Vict Descent#80, 200), ENSURE_REQUIREMENTS, [plan_id=1947]
+            +- HashAggregate(keys=[Vict Descent#80], functions=[partial_count(1)])
+               +- Project [Vict Descent#80]
+                  +- SortMergeJoin [ZIPcode#89], [ZIPcode#62], Inner
+                     :- Sort [ZIPcode#89 ASC NULLS FIRST], false, 0
+                     :  +- Exchange hashpartitioning(ZIPcode#89, 200), ENSURE_REQUIREMENTS, [plan_id=1939]
+                     :     +- Project [Vict Descent#80, ZIPcode#89]
+                     :        +- SortMergeJoin [knownfloatingpointnormalized(normalizenanandzero(LAT#26)), knownfloatingpointnormalized(normalizenanandzero(LON#27))], [knownfloatingpointnormalized(normalizenanandzero(LAT#56)), knownfloatingpointnormalized(normalizenanandzero(LON#57))], Inner
+                     :           :- Sort [knownfloatingpointnormalized(normalizenanandzero(LAT#26)) ASC NULLS FIRST, knownfloatingpointnormalized(normalizenanandzero(LON#27)) ASC NULLS FIRST], false, 0
+                     :           :  +- Exchange hashpartitioning(knownfloatingpointnormalized(normalizenanandzero(LAT#26)), knownfloatingpointnormalized(normalizenanandzero(LON#27)), 200), ENSURE_REQUIREMENTS, [plan_id=1931]
+                     :           :     +- Project [pythonUDF0#256 AS Vict Descent#80, LAT#26, LON#27]
+                     :           :        +- BatchEvalPython [get_race(Vict Descent#13)#79], [pythonUDF0#256]
+                     :           :           +- Project [Vict Descent#13, LAT#26, LON#27]
+                     :           :              +- Filter (((((isnotnull(Vict Descent#13) AND NOT (Vict Descent#13 = )) AND NOT (Vict Descent#13 = X)) AND (year(cast(gettimestamp(DATE OCC#2, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) = 2015)) AND isnotnull(LAT#26)) AND isnotnull(LON#27))
+                     :           :                 +- FileScan csv [DATE OCC#2,Vict Descent#13,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(Vict Descent#13), NOT (Vict Descent#13 = ), NOT (Vict Descent#13 = X), (year(cast(gett..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(Vict Descent), Not(EqualTo(Vict Descent,)), Not(EqualTo(Vict Descent,X)), IsNotNull(LA..., ReadSchema: struct<DATE OCC:string,Vict Descent:string,LAT:double,LON:double>
+                     :           +- Sort [knownfloatingpointnormalized(normalizenanandzero(LAT#56)) ASC NULLS FIRST, knownfloatingpointnormalized(normalizenanandzero(LON#57)) ASC NULLS FIRST], false, 0
+                     :              +- Exchange hashpartitioning(knownfloatingpointnormalized(normalizenanandzero(LAT#56)), knownfloatingpointnormalized(normalizenanandzero(LON#57)), 200), ENSURE_REQUIREMENTS, [plan_id=1932]
+                     :                 +- Project [LAT#56, LON#57, substring(ZIPcode#58, 1, 5) AS ZIPcode#89]
+                     :                    +- Filter ((isnotnull(LAT#56) AND isnotnull(LON#57)) AND isnotnull(substring(ZIPcode#58, 1, 5)))
+                     :                       +- FileScan csv [LAT#56,LON#57,ZIPcode#58] Batched: false, DataFilters: [isnotnull(LAT#56), isnotnull(LON#57), isnotnull(substring(ZIPcode#58, 1, 5))], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/revgecoding.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON)], ReadSchema: struct<LAT:double,LON:double,ZIPcode:string>
+                     +- Sort [ZIPcode#62 ASC NULLS FIRST], false, 0
+                        +- Exchange hashpartitioning(ZIPcode#62, 200), ENSURE_REQUIREMENTS, [plan_id=1940]
+                           +- Filter isnotnull(ZIPcode#62)
+                              +- TakeOrderedAndProject(limit=3, orderBy=[Income Int#182 ASC NULLS FIRST], output=[ZIPcode#62])
+                                 +- Project [ZIPcode#62, cast(regexp_replace(substring(Income#64, 2, 2147483647), ,, , 1) as int) AS Income Int#182]
+                                    +- Filter (isnotnull(Community#63) AND Contains(Community#63, Los Angeles))
+                                       +- FileScan csv [ZIPcode#62,Community#63,Income#64] Batched: false, DataFilters: [isnotnull(Community#63), Contains(Community#63, Los Angeles)], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/income/LA_inco..., PartitionFilters: [], PushedFilters: [IsNotNull(Community), StringContains(Community,Los Angeles)], ReadSchema: struct<ZIPcode:string,Community:string,Income:string>
+
+
+Time needed: 10.043849229812622
+
+
+==============Shuffle Hash Join===============
+
+Maximum wage
++----------------------+---+
+|Vict Descent          |#  |
++----------------------+---+
+|White                 |763|
+|Other                 |318|
+|Hispanic/Latin/Mexican|123|
+|Black                 |44 |
+|Other Asian           |24 |
+|Chinese               |2  |
++----------------------+---+
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [##278L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(##278L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=2450]
+      +- HashAggregate(keys=[Vict Descent#80], functions=[count(1)])
+         +- Exchange hashpartitioning(Vict Descent#80, 200), ENSURE_REQUIREMENTS, [plan_id=2447]
+            +- HashAggregate(keys=[Vict Descent#80], functions=[partial_count(1)])
+               +- Project [Vict Descent#80]
+                  +- ShuffledHashJoin [ZIPcode#89], [ZIPcode#62], Inner, BuildRight
+                     :- Exchange hashpartitioning(ZIPcode#89, 200), ENSURE_REQUIREMENTS, [plan_id=2441]
+                     :  +- Project [Vict Descent#80, ZIPcode#89]
+                     :     +- ShuffledHashJoin [knownfloatingpointnormalized(normalizenanandzero(LAT#26)), knownfloatingpointnormalized(normalizenanandzero(LON#27))], [knownfloatingpointnormalized(normalizenanandzero(LAT#56)), knownfloatingpointnormalized(normalizenanandzero(LON#57))], Inner, BuildRight
+                     :        :- Exchange hashpartitioning(knownfloatingpointnormalized(normalizenanandzero(LAT#26)), knownfloatingpointnormalized(normalizenanandzero(LON#27)), 200), ENSURE_REQUIREMENTS, [plan_id=2435]
+                     :        :  +- Project [pythonUDF0#314 AS Vict Descent#80, LAT#26, LON#27]
+                     :        :     +- BatchEvalPython [get_race(Vict Descent#13)#79], [pythonUDF0#314]
+                     :        :        +- Project [Vict Descent#13, LAT#26, LON#27]
+                     :        :           +- Filter (((((isnotnull(Vict Descent#13) AND NOT (Vict Descent#13 = )) AND NOT (Vict Descent#13 = X)) AND (year(cast(gettimestamp(DATE OCC#2, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) = 2015)) AND isnotnull(LAT#26)) AND isnotnull(LON#27))
+                     :        :              +- FileScan csv [DATE OCC#2,Vict Descent#13,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(Vict Descent#13), NOT (Vict Descent#13 = ), NOT (Vict Descent#13 = X), (year(cast(gett..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(Vict Descent), Not(EqualTo(Vict Descent,)), Not(EqualTo(Vict Descent,X)), IsNotNull(LA..., ReadSchema: struct<DATE OCC:string,Vict Descent:string,LAT:double,LON:double>
+                     :        +- Exchange hashpartitioning(knownfloatingpointnormalized(normalizenanandzero(LAT#56)), knownfloatingpointnormalized(normalizenanandzero(LON#57)), 200), ENSURE_REQUIREMENTS, [plan_id=2436]
+                     :           +- Project [LAT#56, LON#57, substring(ZIPcode#58, 1, 5) AS ZIPcode#89]
+                     :              +- Filter ((isnotnull(LAT#56) AND isnotnull(LON#57)) AND isnotnull(substring(ZIPcode#58, 1, 5)))
+                     :                 +- FileScan csv [LAT#56,LON#57,ZIPcode#58] Batched: false, DataFilters: [isnotnull(LAT#56), isnotnull(LON#57), isnotnull(substring(ZIPcode#58, 1, 5))], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/revgecoding.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON)], ReadSchema: struct<LAT:double,LON:double,ZIPcode:string>
+                     +- Exchange hashpartitioning(ZIPcode#62, 200), ENSURE_REQUIREMENTS, [plan_id=2442]
+                        +- Filter isnotnull(ZIPcode#62)
+                           +- TakeOrderedAndProject(limit=3, orderBy=[Income Int#263 DESC NULLS LAST], output=[ZIPcode#62])
+                              +- Project [ZIPcode#62, cast(regexp_replace(substring(Income#64, 2, 2147483647), ,, , 1) as int) AS Income Int#263]
+                                 +- Filter (isnotnull(Community#63) AND Contains(Community#63, Los Angeles))
+                                    +- FileScan csv [ZIPcode#62,Community#63,Income#64] Batched: false, DataFilters: [isnotnull(Community#63), Contains(Community#63, Los Angeles)], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/income/LA_inco..., PartitionFilters: [], PushedFilters: [IsNotNull(Community), StringContains(Community,Los Angeles)], ReadSchema: struct<ZIPcode:string,Community:string,Income:string>
+
+
+Minimum wage
++------------------------------+----+
+|Vict Descent                  |#   |
++------------------------------+----+
+|Hispanic/Latin/Mexican        |1550|
+|Black                         |1094|
+|White                         |705 |
+|Other                         |400 |
+|Other Asian                   |104 |
+|Korean                        |9   |
+|American Indian/Alaskan Native|3   |
+|Japanese                      |3   |
+|Chinese                       |2   |
+|Filipino                      |2   |
++------------------------------+----+
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [##289L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(##289L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=2950]
+      +- HashAggregate(keys=[Vict Descent#80], functions=[count(1)])
+         +- Exchange hashpartitioning(Vict Descent#80, 200), ENSURE_REQUIREMENTS, [plan_id=2947]
+            +- HashAggregate(keys=[Vict Descent#80], functions=[partial_count(1)])
+               +- Project [Vict Descent#80]
+                  +- ShuffledHashJoin [ZIPcode#89], [ZIPcode#62], Inner, BuildRight
+                     :- Exchange hashpartitioning(ZIPcode#89, 200), ENSURE_REQUIREMENTS, [plan_id=2941]
+                     :  +- Project [Vict Descent#80, ZIPcode#89]
+                     :     +- ShuffledHashJoin [knownfloatingpointnormalized(normalizenanandzero(LAT#26)), knownfloatingpointnormalized(normalizenanandzero(LON#27))], [knownfloatingpointnormalized(normalizenanandzero(LAT#56)), knownfloatingpointnormalized(normalizenanandzero(LON#57))], Inner, BuildRight
+                     :        :- Exchange hashpartitioning(knownfloatingpointnormalized(normalizenanandzero(LAT#26)), knownfloatingpointnormalized(normalizenanandzero(LON#27)), 200), ENSURE_REQUIREMENTS, [plan_id=2935]
+                     :        :  +- Project [pythonUDF0#337 AS Vict Descent#80, LAT#26, LON#27]
+                     :        :     +- BatchEvalPython [get_race(Vict Descent#13)#79], [pythonUDF0#337]
+                     :        :        +- Project [Vict Descent#13, LAT#26, LON#27]
+                     :        :           +- Filter (((((isnotnull(Vict Descent#13) AND NOT (Vict Descent#13 = )) AND NOT (Vict Descent#13 = X)) AND (year(cast(gettimestamp(DATE OCC#2, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) = 2015)) AND isnotnull(LAT#26)) AND isnotnull(LON#27))
+                     :        :              +- FileScan csv [DATE OCC#2,Vict Descent#13,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(Vict Descent#13), NOT (Vict Descent#13 = ), NOT (Vict Descent#13 = X), (year(cast(gett..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(Vict Descent), Not(EqualTo(Vict Descent,)), Not(EqualTo(Vict Descent,X)), IsNotNull(LA..., ReadSchema: struct<DATE OCC:string,Vict Descent:string,LAT:double,LON:double>
+                     :        +- Exchange hashpartitioning(knownfloatingpointnormalized(normalizenanandzero(LAT#56)), knownfloatingpointnormalized(normalizenanandzero(LON#57)), 200), ENSURE_REQUIREMENTS, [plan_id=2936]
+                     :           +- Project [LAT#56, LON#57, substring(ZIPcode#58, 1, 5) AS ZIPcode#89]
+                     :              +- Filter ((isnotnull(LAT#56) AND isnotnull(LON#57)) AND isnotnull(substring(ZIPcode#58, 1, 5)))
+                     :                 +- FileScan csv [LAT#56,LON#57,ZIPcode#58] Batched: false, DataFilters: [isnotnull(LAT#56), isnotnull(LON#57), isnotnull(substring(ZIPcode#58, 1, 5))], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/revgecoding.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON)], ReadSchema: struct<LAT:double,LON:double,ZIPcode:string>
+                     +- Exchange hashpartitioning(ZIPcode#62, 200), ENSURE_REQUIREMENTS, [plan_id=2942]
+                        +- Filter isnotnull(ZIPcode#62)
+                           +- TakeOrderedAndProject(limit=3, orderBy=[Income Int#263 ASC NULLS FIRST], output=[ZIPcode#62])
+                              +- Project [ZIPcode#62, cast(regexp_replace(substring(Income#64, 2, 2147483647), ,, , 1) as int) AS Income Int#263]
+                                 +- Filter (isnotnull(Community#63) AND Contains(Community#63, Los Angeles))
+                                    +- FileScan csv [ZIPcode#62,Community#63,Income#64] Batched: false, DataFilters: [isnotnull(Community#63), Contains(Community#63, Los Angeles)], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/income/LA_inco..., PartitionFilters: [], PushedFilters: [IsNotNull(Community), StringContains(Community,Los Angeles)], ReadSchema: struct<ZIPcode:string,Community:string,Income:string>
+
+
+Time needed: 7.879580736160278
+
+
+==============Shuffle Replicate NL Join===============
+
+Maximum wage
++----------------------+---+
+|Vict Descent          |#  |
++----------------------+---+
+|White                 |763|
+|Other                 |318|
+|Hispanic/Latin/Mexican|123|
+|Black                 |44 |
+|Other Asian           |24 |
+|Chinese               |2  |
++----------------------+---+
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [##359L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(##359L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=3222]
+      +- HashAggregate(keys=[Vict Descent#80], functions=[count(1)])
+         +- Exchange hashpartitioning(Vict Descent#80, 200), ENSURE_REQUIREMENTS, [plan_id=3219]
+            +- HashAggregate(keys=[Vict Descent#80], functions=[partial_count(1)])
+               +- Project [Vict Descent#80]
+                  +- CartesianProduct (ZIPcode#89 = ZIPcode#62)
+                     :- Project [Vict Descent#80, ZIPcode#89]
+                     :  +- CartesianProduct ((knownfloatingpointnormalized(normalizenanandzero(LAT#26)) = knownfloatingpointnormalized(normalizenanandzero(LAT#56))) AND (knownfloatingpointnormalized(normalizenanandzero(LON#27)) = knownfloatingpointnormalized(normalizenanandzero(LON#57))))
+                     :     :- Project [pythonUDF0#395 AS Vict Descent#80, LAT#26, LON#27]
+                     :     :  +- BatchEvalPython [get_race(Vict Descent#13)#79], [pythonUDF0#395]
+                     :     :     +- Project [Vict Descent#13, LAT#26, LON#27]
+                     :     :        +- Filter (((((isnotnull(Vict Descent#13) AND NOT (Vict Descent#13 = )) AND NOT (Vict Descent#13 = X)) AND (year(cast(gettimestamp(DATE OCC#2, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) = 2015)) AND isnotnull(LAT#26)) AND isnotnull(LON#27))
+                     :     :           +- FileScan csv [DATE OCC#2,Vict Descent#13,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(Vict Descent#13), NOT (Vict Descent#13 = ), NOT (Vict Descent#13 = X), (year(cast(gett..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(Vict Descent), Not(EqualTo(Vict Descent,)), Not(EqualTo(Vict Descent,X)), IsNotNull(LA..., ReadSchema: struct<DATE OCC:string,Vict Descent:string,LAT:double,LON:double>
+                     :     +- Project [LAT#56, LON#57, substring(ZIPcode#58, 1, 5) AS ZIPcode#89]
+                     :        +- Filter ((isnotnull(LAT#56) AND isnotnull(LON#57)) AND isnotnull(substring(ZIPcode#58, 1, 5)))
+                     :           +- FileScan csv [LAT#56,LON#57,ZIPcode#58] Batched: false, DataFilters: [isnotnull(LAT#56), isnotnull(LON#57), isnotnull(substring(ZIPcode#58, 1, 5))], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/revgecoding.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON)], ReadSchema: struct<LAT:double,LON:double,ZIPcode:string>
+                     +- Filter isnotnull(ZIPcode#62)
+                        +- TakeOrderedAndProject(limit=3, orderBy=[Income Int#344 DESC NULLS LAST], output=[ZIPcode#62])
+                           +- Project [ZIPcode#62, cast(regexp_replace(substring(Income#64, 2, 2147483647), ,, , 1) as int) AS Income Int#344]
+                              +- Filter (isnotnull(Community#63) AND Contains(Community#63, Los Angeles))
+                                 +- FileScan csv [ZIPcode#62,Community#63,Income#64] Batched: false, DataFilters: [isnotnull(Community#63), Contains(Community#63, Los Angeles)], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/income/LA_inco..., PartitionFilters: [], PushedFilters: [IsNotNull(Community), StringContains(Community,Los Angeles)], ReadSchema: struct<ZIPcode:string,Community:string,Income:string>
+
+
+Minimum wage
++------------------------------+----+
+|Vict Descent                  |#   |
++------------------------------+----+
+|Hispanic/Latin/Mexican        |1550|
+|Black                         |1094|
+|White                         |705 |
+|Other                         |400 |
+|Other Asian                   |104 |
+|Korean                        |9   |
+|American Indian/Alaskan Native|3   |
+|Japanese                      |3   |
+|Chinese                       |2   |
+|Filipino                      |2   |
++------------------------------+----+
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [##370L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(##370L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=3494]
+      +- HashAggregate(keys=[Vict Descent#80], functions=[count(1)])
+         +- Exchange hashpartitioning(Vict Descent#80, 200), ENSURE_REQUIREMENTS, [plan_id=3491]
+            +- HashAggregate(keys=[Vict Descent#80], functions=[partial_count(1)])
+               +- Project [Vict Descent#80]
+                  +- CartesianProduct (ZIPcode#89 = ZIPcode#62)
+                     :- Project [Vict Descent#80, ZIPcode#89]
+                     :  +- CartesianProduct ((knownfloatingpointnormalized(normalizenanandzero(LAT#26)) = knownfloatingpointnormalized(normalizenanandzero(LAT#56))) AND (knownfloatingpointnormalized(normalizenanandzero(LON#27)) = knownfloatingpointnormalized(normalizenanandzero(LON#57))))
+                     :     :- Project [pythonUDF0#418 AS Vict Descent#80, LAT#26, LON#27]
+                     :     :  +- BatchEvalPython [get_race(Vict Descent#13)#79], [pythonUDF0#418]
+                     :     :     +- Project [Vict Descent#13, LAT#26, LON#27]
+                     :     :        +- Filter (((((isnotnull(Vict Descent#13) AND NOT (Vict Descent#13 = )) AND NOT (Vict Descent#13 = X)) AND (year(cast(gettimestamp(DATE OCC#2, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) = 2015)) AND isnotnull(LAT#26)) AND isnotnull(LON#27))
+                     :     :           +- FileScan csv [DATE OCC#2,Vict Descent#13,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(Vict Descent#13), NOT (Vict Descent#13 = ), NOT (Vict Descent#13 = X), (year(cast(gett..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(Vict Descent), Not(EqualTo(Vict Descent,)), Not(EqualTo(Vict Descent,X)), IsNotNull(LA..., ReadSchema: struct<DATE OCC:string,Vict Descent:string,LAT:double,LON:double>
+                     :     +- Project [LAT#56, LON#57, substring(ZIPcode#58, 1, 5) AS ZIPcode#89]
+                     :        +- Filter ((isnotnull(LAT#56) AND isnotnull(LON#57)) AND isnotnull(substring(ZIPcode#58, 1, 5)))
+                     :           +- FileScan csv [LAT#56,LON#57,ZIPcode#58] Batched: false, DataFilters: [isnotnull(LAT#56), isnotnull(LON#57), isnotnull(substring(ZIPcode#58, 1, 5))], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/revgecoding.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON)], ReadSchema: struct<LAT:double,LON:double,ZIPcode:string>
+                     +- Filter isnotnull(ZIPcode#62)
+                        +- TakeOrderedAndProject(limit=3, orderBy=[Income Int#344 ASC NULLS FIRST], output=[ZIPcode#62])
+                           +- Project [ZIPcode#62, cast(regexp_replace(substring(Income#64, 2, 2147483647), ,, , 1) as int) AS Income Int#344]
+                              +- Filter (isnotnull(Community#63) AND Contains(Community#63, Los Angeles))
+                                 +- FileScan csv [ZIPcode#62,Community#63,Income#64] Batched: false, DataFilters: [isnotnull(Community#63), Contains(Community#63, Los Angeles)], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/income/LA_inco..., PartitionFilters: [], PushedFilters: [IsNotNull(Community), StringContains(Community,Los Angeles)], ReadSchema: struct<ZIPcode:string,Community:string,Income:string>
+
+
+Time needed: 641.8876633644104
+

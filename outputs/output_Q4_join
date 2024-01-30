@@ -1,0 +1,807 @@
+24/01/22 14:06:14 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+24/01/22 14:06:16 WARN Client: Neither spark.yarn.jars nor spark.yarn.archive is set, falling back to uploading libraries under SPARK_HOME.
+
+==========Broadcast Join==========
+
+Q4 1a
++----+----------------+-----+
+|year|average_distance|    #|
++----+----------------+-----+
+|2010|           2.776|11368|
+|2011|           2.857| 9614|
+|2012|           2.836| 6532|
+|2013|           2.826| 5838|
+|2014|           2.734| 4331|
+|2015|           2.706| 6763|
+|2016|           2.718| 8100|
+|2017|           2.724| 7786|
+|2018|           2.733| 7413|
+|2019|            2.74| 7129|
+|2020|            2.49| 2248|
+|2021|           2.682| 7150|
+|2022|           2.486| 5831|
+|2023|           2.548| 8896|
++----+----------------+-----+
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [year#158 ASC NULLS FIRST], true, 0
+   +- Exchange rangepartitioning(year#158 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=299]
+      +- HashAggregate(keys=[year#158], functions=[avg(Distance#180), count(DR_NO#0)])
+         +- Exchange hashpartitioning(year#158, 200), ENSURE_REQUIREMENTS, [plan_id=296]
+            +- HashAggregate(keys=[year#158], functions=[partial_avg(Distance#180), partial_count(DR_NO#0)])
+               +- Project [DR_NO#0, year#158, pythonUDF0#337 AS Distance#180]
+                  +- BatchEvalPython [haversine_distance(LAT#26, LON#27, Y#119, X#118)#179], [pythonUDF0#337]
+                     +- Project [DR_NO#0, year#158, LAT#26, LON#27, X#118, Y#119]
+                        +- BroadcastHashJoin [AREA#4], [AREA#123], Inner, BuildRight, false
+                           :- Union
+                           :  :- Project [DR_NO#0, year(cast(gettimestamp(DATE OCC#2, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) AS year#158, AREA#4, LAT#26, LON#27]
+                           :  :  +- Filter ((((((isnotnull(LAT#26) AND isnotnull(LON#27)) AND isnotnull(Weapon Used Cd#16)) AND NOT (LAT#26 = 0.0)) AND NOT (LON#27 = 0.0)) AND StartsWith(Weapon Used Cd#16, 1)) AND isnotnull(AREA#4))
+                           :  :     +- FileScan csv [DR_NO#0,DATE OCC#2,AREA#4,Weapon Used Cd#16,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(LAT#26), isnotnull(LON#27), isnotnull(Weapon Used Cd#16), NOT (LAT#26 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,DATE OCC:string,AREA:int,Weapon Used Cd:string,LAT:double,LON:double>
+                           :  +- Project [DR_NO#56, year(cast(gettimestamp(DATE OCC#58, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) AS year#336, AREA#60, LAT#82, LON#83]
+                           :     +- Filter ((((((isnotnull(LAT#82) AND isnotnull(LON#83)) AND isnotnull(Weapon Used Cd#72)) AND NOT (LAT#82 = 0.0)) AND NOT (LON#83 = 0.0)) AND StartsWith(Weapon Used Cd#72, 1)) AND isnotnull(AREA#60))
+                           :        +- FileScan csv [DR_NO#56,DATE OCC#58,AREA#60,Weapon Used Cd#72,LAT#82,LON#83] Batched: false, DataFilters: [isnotnull(LAT#82), isnotnull(LON#83), isnotnull(Weapon Used Cd#72), NOT (LAT#82 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,DATE OCC:string,AREA:int,Weapon Used Cd:string,LAT:double,LON:double>
+                           +- BroadcastExchange HashedRelationBroadcastMode(List(cast(input[2, int, false] as bigint)),false), [plan_id=289]
+                              +- Filter isnotnull(AREA#123)
+                                 +- FileScan csv [X#118,Y#119,AREA#123] Batched: false, DataFilters: [isnotnull(AREA#123)], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/LAPD_Police_St..., PartitionFilters: [], PushedFilters: [IsNotNull(AREA)], ReadSchema: struct<X:double,Y:double,AREA:int>
+
+
+Q4 1b
++---------------+----------------+-----+
+|       division|average_distance|    #|
++---------------+----------------+-----+
+|    77TH STREET|           2.731|14625|
+|      SOUTHEAST|           2.109|10388|
+|      SOUTHWEST|           2.697| 8633|
+|         NEWTON|           1.994| 7926|
+|     HOLLENBECK|           2.653| 6104|
+|         HARBOR|           4.086| 5430|
+|        RAMPART|           1.579| 4995|
+|        MISSION|           4.728| 3924|
+|      NORTHEAST|            3.92| 3861|
+|        OLYMPIC|           1.855| 3554|
+|        CENTRAL|           1.136| 3477|
+|      HOLLYWOOD|           1.454| 3407|
+|       WILSHIRE|           2.304| 3394|
+|       FOOTHILL|           3.755| 3249|
+|NORTH HOLLYWOOD|           2.704| 3036|
+|    WEST VALLEY|           3.509| 2833|
+|       VAN NUYS|           2.208| 2661|
+|        PACIFIC|           3.705| 2087|
+|     DEVONSHIRE|           3.954| 2039|
+|        TOPANGA|           3.457| 1860|
++---------------+----------------+-----+
+only showing top 20 rows
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [##219L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(##219L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=600]
+      +- HashAggregate(keys=[division#121], functions=[avg(Distance#180), count(DR_NO#0)])
+         +- Exchange hashpartitioning(division#121, 200), ENSURE_REQUIREMENTS, [plan_id=597]
+            +- HashAggregate(keys=[division#121], functions=[partial_avg(Distance#180), partial_count(DR_NO#0)])
+               +- Project [DR_NO#0, division#121, pythonUDF0#381 AS Distance#180]
+                  +- BatchEvalPython [haversine_distance(LAT#26, LON#27, Y#119, X#118)#179], [pythonUDF0#381]
+                     +- Project [DR_NO#0, LAT#26, LON#27, X#118, Y#119, division#121]
+                        +- BroadcastHashJoin [AREA#4], [AREA#123], Inner, BuildRight, false
+                           :- Union
+                           :  :- Project [DR_NO#0, AREA#4, LAT#26, LON#27]
+                           :  :  +- Filter ((((((isnotnull(LAT#26) AND isnotnull(LON#27)) AND isnotnull(Weapon Used Cd#16)) AND NOT (LAT#26 = 0.0)) AND NOT (LON#27 = 0.0)) AND StartsWith(Weapon Used Cd#16, 1)) AND isnotnull(AREA#4))
+                           :  :     +- FileScan csv [DR_NO#0,AREA#4,Weapon Used Cd#16,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(LAT#26), isnotnull(LON#27), isnotnull(Weapon Used Cd#16), NOT (LAT#26 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,AREA:int,Weapon Used Cd:string,LAT:double,LON:double>
+                           :  +- Project [DR_NO#56, AREA#60, LAT#82, LON#83]
+                           :     +- Filter ((((((isnotnull(LAT#82) AND isnotnull(LON#83)) AND isnotnull(Weapon Used Cd#72)) AND NOT (LAT#82 = 0.0)) AND NOT (LON#83 = 0.0)) AND StartsWith(Weapon Used Cd#72, 1)) AND isnotnull(AREA#60))
+                           :        +- FileScan csv [DR_NO#56,AREA#60,Weapon Used Cd#72,LAT#82,LON#83] Batched: false, DataFilters: [isnotnull(LAT#82), isnotnull(LON#83), isnotnull(Weapon Used Cd#72), NOT (LAT#82 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,AREA:int,Weapon Used Cd:string,LAT:double,LON:double>
+                           +- BroadcastExchange HashedRelationBroadcastMode(List(cast(input[3, int, false] as bigint)),false), [plan_id=590]
+                              +- Filter isnotnull(AREA#123)
+                                 +- FileScan csv [X#118,Y#119,division#121,AREA#123] Batched: false, DataFilters: [isnotnull(AREA#123)], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/LAPD_Police_St..., PartitionFilters: [], PushedFilters: [IsNotNull(AREA)], ReadSchema: struct<X:double,Y:double,division:string,AREA:int>
+
+
+Q4 2a
++----+----------------+-----+
+|year|average_distance|    #|
++----+----------------+-----+
+|2010|           2.393|11368|
+|2011|           2.536| 9614|
+|2012|           2.506| 6532|
+|2013|           2.456| 5838|
+|2014|           2.353| 4331|
+|2015|           2.388| 6763|
+|2016|           2.429| 8100|
+|2017|           2.392| 7786|
+|2018|           2.409| 7413|
+|2019|            2.43| 7129|
+|2020|           2.269| 2248|
+|2021|           2.446| 7150|
+|2022|           2.219| 5831|
+|2023|           2.267| 8896|
++----+----------------+-----+
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [year#158 ASC NULLS FIRST], true, 0
+   +- Exchange rangepartitioning(year#158 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=999]
+      +- HashAggregate(keys=[year#158], functions=[avg(Distance#234), count(DR_NO#0)])
+         +- Exchange hashpartitioning(year#158, 200), ENSURE_REQUIREMENTS, [plan_id=996]
+            +- HashAggregate(keys=[year#158], functions=[partial_avg(Distance#234), partial_count(DR_NO#0)])
+               +- Project [DR_NO#0, year#158, Distance#234]
+                  +- Filter ((isnotnull(Distance#234) AND isnotnull(min_distance#254)) AND (Distance#234 = min_distance#254))
+                     +- Window [min(Distance#234) windowspecdefinition(DR_NO#0, specifiedwindowframe(RowFrame, unboundedpreceding$(), unboundedfollowing$())) AS min_distance#254], [DR_NO#0]
+                        +- Sort [DR_NO#0 ASC NULLS FIRST], false, 0
+                           +- Exchange hashpartitioning(DR_NO#0, 200), ENSURE_REQUIREMENTS, [plan_id=989]
+                              +- Project [DR_NO#0, year#158, pythonUDF0#425 AS Distance#234]
+                                 +- BatchEvalPython [haversine_distance(LAT#26, LON#27, Y#119, X#118)#233], [pythonUDF0#425]
+                                    +- BroadcastNestedLoopJoin BuildRight, Inner
+                                       :- Union
+                                       :  :- Project [DR_NO#0, year(cast(gettimestamp(DATE OCC#2, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) AS year#158, LAT#26, LON#27]
+                                       :  :  +- Filter (((((isnotnull(LAT#26) AND isnotnull(LON#27)) AND isnotnull(Weapon Used Cd#16)) AND NOT (LAT#26 = 0.0)) AND NOT (LON#27 = 0.0)) AND StartsWith(Weapon Used Cd#16, 1))
+                                       :  :     +- FileScan csv [DR_NO#0,DATE OCC#2,Weapon Used Cd#16,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(LAT#26), isnotnull(LON#27), isnotnull(Weapon Used Cd#16), NOT (LAT#26 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,DATE OCC:string,Weapon Used Cd:string,LAT:double,LON:double>
+                                       :  +- Project [DR_NO#56, year(cast(gettimestamp(DATE OCC#58, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) AS year#424, LAT#82, LON#83]
+                                       :     +- Filter (((((isnotnull(LAT#82) AND isnotnull(LON#83)) AND isnotnull(Weapon Used Cd#72)) AND NOT (LAT#82 = 0.0)) AND NOT (LON#83 = 0.0)) AND StartsWith(Weapon Used Cd#72, 1))
+                                       :        +- FileScan csv [DR_NO#56,DATE OCC#58,Weapon Used Cd#72,LAT#82,LON#83] Batched: false, DataFilters: [isnotnull(LAT#82), isnotnull(LON#83), isnotnull(Weapon Used Cd#72), NOT (LAT#82 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,DATE OCC:string,Weapon Used Cd:string,LAT:double,LON:double>
+                                       +- BroadcastExchange IdentityBroadcastMode, [plan_id=984]
+                                          +- FileScan csv [X#118,Y#119] Batched: false, DataFilters: [], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/LAPD_Police_St..., PartitionFilters: [], PushedFilters: [], ReadSchema: struct<X:double,Y:double>
+
+
+Q4 2b
++---------------+----------------+-----+
+|       division|average_distance|    #|
++---------------+----------------+-----+
+|    77TH STREET|            1.74|11505|
+|      SOUTHWEST|           2.252|10637|
+|      SOUTHEAST|           2.221| 9583|
+|       WILSHIRE|           2.445| 6234|
+|     HOLLENBECK|           2.647| 6160|
+|         NEWTON|           1.563| 5980|
+|         HARBOR|           3.899| 5308|
+|      HOLLYWOOD|            2.01| 5146|
+|        OLYMPIC|           1.678| 4713|
+|        RAMPART|           1.395| 4682|
+|       VAN NUYS|           2.937| 4502|
+|       FOOTHILL|           3.561| 3971|
+|        CENTRAL|           1.013| 3419|
+|      NORTHEAST|           3.766| 3100|
+|NORTH HOLLYWOOD|            2.71| 3028|
+|    WEST VALLEY|           2.759| 2697|
+|        MISSION|            3.82| 2418|
+|        PACIFIC|            3.66| 1978|
+|        TOPANGA|           3.008| 1880|
+|     DEVONSHIRE|           2.978| 1081|
++---------------+----------------+-----+
+only showing top 20 rows
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [##289L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(##289L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=1398]
+      +- HashAggregate(keys=[division#121], functions=[avg(Distance#234), count(DR_NO#0)])
+         +- Exchange hashpartitioning(division#121, 200), ENSURE_REQUIREMENTS, [plan_id=1395]
+            +- HashAggregate(keys=[division#121], functions=[partial_avg(Distance#234), partial_count(DR_NO#0)])
+               +- Project [DR_NO#0, division#121, Distance#234]
+                  +- Filter ((isnotnull(Distance#234) AND isnotnull(min_distance#254)) AND (Distance#234 = min_distance#254))
+                     +- Window [min(Distance#234) windowspecdefinition(DR_NO#0, specifiedwindowframe(RowFrame, unboundedpreceding$(), unboundedfollowing$())) AS min_distance#254], [DR_NO#0]
+                        +- Sort [DR_NO#0 ASC NULLS FIRST], false, 0
+                           +- Exchange hashpartitioning(DR_NO#0, 200), ENSURE_REQUIREMENTS, [plan_id=1388]
+                              +- Project [DR_NO#0, division#121, pythonUDF0#468 AS Distance#234]
+                                 +- BatchEvalPython [haversine_distance(LAT#26, LON#27, Y#119, X#118)#233], [pythonUDF0#468]
+                                    +- BroadcastNestedLoopJoin BuildRight, Inner
+                                       :- Union
+                                       :  :- Project [DR_NO#0, LAT#26, LON#27]
+                                       :  :  +- Filter (((((isnotnull(LAT#26) AND isnotnull(LON#27)) AND isnotnull(Weapon Used Cd#16)) AND NOT (LAT#26 = 0.0)) AND NOT (LON#27 = 0.0)) AND StartsWith(Weapon Used Cd#16, 1))
+                                       :  :     +- FileScan csv [DR_NO#0,Weapon Used Cd#16,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(LAT#26), isnotnull(LON#27), isnotnull(Weapon Used Cd#16), NOT (LAT#26 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,Weapon Used Cd:string,LAT:double,LON:double>
+                                       :  +- Project [DR_NO#56, LAT#82, LON#83]
+                                       :     +- Filter (((((isnotnull(LAT#82) AND isnotnull(LON#83)) AND isnotnull(Weapon Used Cd#72)) AND NOT (LAT#82 = 0.0)) AND NOT (LON#83 = 0.0)) AND StartsWith(Weapon Used Cd#72, 1))
+                                       :        +- FileScan csv [DR_NO#56,Weapon Used Cd#72,LAT#82,LON#83] Batched: false, DataFilters: [isnotnull(LAT#82), isnotnull(LON#83), isnotnull(Weapon Used Cd#72), NOT (LAT#82 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,Weapon Used Cd:string,LAT:double,LON:double>
+                                       +- BroadcastExchange IdentityBroadcastMode, [plan_id=1383]
+                                          +- FileScan csv [X#118,Y#119,division#121] Batched: false, DataFilters: [], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/LAPD_Police_St..., PartitionFilters: [], PushedFilters: [], ReadSchema: struct<X:double,Y:double,division:string>
+
+
+Time elapsed: 32.48865842819214
+Time needed: 30.03873896598816
+
+
+==========Merge Join==========
+
+Q4 1a
++----+----------------+-----+
+|year|average_distance|    #|
++----+----------------+-----+
+|2010|           2.776|11368|
+|2011|           2.857| 9614|
+|2012|           2.836| 6532|
+|2013|           2.826| 5838|
+|2014|           2.734| 4331|
+|2015|           2.706| 6763|
+|2016|           2.718| 8100|
+|2017|           2.724| 7786|
+|2018|           2.733| 7413|
+|2019|            2.74| 7129|
+|2020|            2.49| 2248|
+|2021|           2.682| 7150|
+|2022|           2.486| 5831|
+|2023|           2.548| 8896|
++----+----------------+-----+
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [year#158 ASC NULLS FIRST], true, 0
+   +- Exchange rangepartitioning(year#158 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=1790]
+      +- HashAggregate(keys=[year#158], functions=[avg(Distance#479), count(DR_NO#0)])
+         +- Exchange hashpartitioning(year#158, 200), ENSURE_REQUIREMENTS, [plan_id=1787]
+            +- HashAggregate(keys=[year#158], functions=[partial_avg(Distance#479), partial_count(DR_NO#0)])
+               +- Project [DR_NO#0, year#158, pythonUDF0#636 AS Distance#479]
+                  +- BatchEvalPython [haversine_distance(LAT#26, LON#27, Y#119, X#118)#478], [pythonUDF0#636]
+                     +- Project [DR_NO#0, year#158, LAT#26, LON#27, X#118, Y#119]
+                        +- SortMergeJoin [AREA#4], [AREA#123], Inner
+                           :- Sort [AREA#4 ASC NULLS FIRST], false, 0
+                           :  +- Exchange hashpartitioning(AREA#4, 200), ENSURE_REQUIREMENTS, [plan_id=1777]
+                           :     +- Union
+                           :        :- Project [DR_NO#0, year(cast(gettimestamp(DATE OCC#2, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) AS year#158, AREA#4, LAT#26, LON#27]
+                           :        :  +- Filter ((((((isnotnull(LAT#26) AND isnotnull(LON#27)) AND isnotnull(Weapon Used Cd#16)) AND NOT (LAT#26 = 0.0)) AND NOT (LON#27 = 0.0)) AND StartsWith(Weapon Used Cd#16, 1)) AND isnotnull(AREA#4))
+                           :        :     +- FileScan csv [DR_NO#0,DATE OCC#2,AREA#4,Weapon Used Cd#16,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(LAT#26), isnotnull(LON#27), isnotnull(Weapon Used Cd#16), NOT (LAT#26 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,DATE OCC:string,AREA:int,Weapon Used Cd:string,LAT:double,LON:double>
+                           :        +- Project [DR_NO#56, year(cast(gettimestamp(DATE OCC#58, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) AS year#635, AREA#60, LAT#82, LON#83]
+                           :           +- Filter ((((((isnotnull(LAT#82) AND isnotnull(LON#83)) AND isnotnull(Weapon Used Cd#72)) AND NOT (LAT#82 = 0.0)) AND NOT (LON#83 = 0.0)) AND StartsWith(Weapon Used Cd#72, 1)) AND isnotnull(AREA#60))
+                           :              +- FileScan csv [DR_NO#56,DATE OCC#58,AREA#60,Weapon Used Cd#72,LAT#82,LON#83] Batched: false, DataFilters: [isnotnull(LAT#82), isnotnull(LON#83), isnotnull(Weapon Used Cd#72), NOT (LAT#82 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,DATE OCC:string,AREA:int,Weapon Used Cd:string,LAT:double,LON:double>
+                           +- Sort [AREA#123 ASC NULLS FIRST], false, 0
+                              +- Exchange hashpartitioning(AREA#123, 200), ENSURE_REQUIREMENTS, [plan_id=1778]
+                                 +- Filter isnotnull(AREA#123)
+                                    +- FileScan csv [X#118,Y#119,AREA#123] Batched: false, DataFilters: [isnotnull(AREA#123)], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/LAPD_Police_St..., PartitionFilters: [], PushedFilters: [IsNotNull(AREA)], ReadSchema: struct<X:double,Y:double,AREA:int>
+
+
+Q4 1b
++---------------+----------------+-----+
+|       division|average_distance|    #|
++---------------+----------------+-----+
+|    77TH STREET|           2.731|14625|
+|      SOUTHEAST|           2.109|10388|
+|      SOUTHWEST|           2.697| 8633|
+|         NEWTON|           1.994| 7926|
+|     HOLLENBECK|           2.653| 6104|
+|         HARBOR|           4.086| 5430|
+|        RAMPART|           1.579| 4995|
+|        MISSION|           4.728| 3924|
+|      NORTHEAST|            3.92| 3861|
+|        OLYMPIC|           1.855| 3554|
+|        CENTRAL|           1.136| 3477|
+|      HOLLYWOOD|           1.454| 3407|
+|       WILSHIRE|           2.304| 3394|
+|       FOOTHILL|           3.755| 3249|
+|NORTH HOLLYWOOD|           2.704| 3036|
+|    WEST VALLEY|           3.509| 2833|
+|       VAN NUYS|           2.208| 2661|
+|        PACIFIC|           3.705| 2087|
+|     DEVONSHIRE|           3.954| 2039|
+|        TOPANGA|           3.457| 1860|
++---------------+----------------+-----+
+only showing top 20 rows
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [##518L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(##518L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=2182]
+      +- HashAggregate(keys=[division#121], functions=[avg(Distance#479), count(DR_NO#0)])
+         +- Exchange hashpartitioning(division#121, 200), ENSURE_REQUIREMENTS, [plan_id=2179]
+            +- HashAggregate(keys=[division#121], functions=[partial_avg(Distance#479), partial_count(DR_NO#0)])
+               +- Project [DR_NO#0, division#121, pythonUDF0#680 AS Distance#479]
+                  +- BatchEvalPython [haversine_distance(LAT#26, LON#27, Y#119, X#118)#478], [pythonUDF0#680]
+                     +- Project [DR_NO#0, LAT#26, LON#27, X#118, Y#119, division#121]
+                        +- SortMergeJoin [AREA#4], [AREA#123], Inner
+                           :- Sort [AREA#4 ASC NULLS FIRST], false, 0
+                           :  +- Exchange hashpartitioning(AREA#4, 200), ENSURE_REQUIREMENTS, [plan_id=2169]
+                           :     +- Union
+                           :        :- Project [DR_NO#0, AREA#4, LAT#26, LON#27]
+                           :        :  +- Filter ((((((isnotnull(LAT#26) AND isnotnull(LON#27)) AND isnotnull(Weapon Used Cd#16)) AND NOT (LAT#26 = 0.0)) AND NOT (LON#27 = 0.0)) AND StartsWith(Weapon Used Cd#16, 1)) AND isnotnull(AREA#4))
+                           :        :     +- FileScan csv [DR_NO#0,AREA#4,Weapon Used Cd#16,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(LAT#26), isnotnull(LON#27), isnotnull(Weapon Used Cd#16), NOT (LAT#26 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,AREA:int,Weapon Used Cd:string,LAT:double,LON:double>
+                           :        +- Project [DR_NO#56, AREA#60, LAT#82, LON#83]
+                           :           +- Filter ((((((isnotnull(LAT#82) AND isnotnull(LON#83)) AND isnotnull(Weapon Used Cd#72)) AND NOT (LAT#82 = 0.0)) AND NOT (LON#83 = 0.0)) AND StartsWith(Weapon Used Cd#72, 1)) AND isnotnull(AREA#60))
+                           :              +- FileScan csv [DR_NO#56,AREA#60,Weapon Used Cd#72,LAT#82,LON#83] Batched: false, DataFilters: [isnotnull(LAT#82), isnotnull(LON#83), isnotnull(Weapon Used Cd#72), NOT (LAT#82 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,AREA:int,Weapon Used Cd:string,LAT:double,LON:double>
+                           +- Sort [AREA#123 ASC NULLS FIRST], false, 0
+                              +- Exchange hashpartitioning(AREA#123, 200), ENSURE_REQUIREMENTS, [plan_id=2170]
+                                 +- Filter isnotnull(AREA#123)
+                                    +- FileScan csv [X#118,Y#119,division#121,AREA#123] Batched: false, DataFilters: [isnotnull(AREA#123)], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/LAPD_Police_St..., PartitionFilters: [], PushedFilters: [IsNotNull(AREA)], ReadSchema: struct<X:double,Y:double,division:string,AREA:int>
+
+
+Q4 2a
+24/01/22 14:07:18 WARN HintErrorLogger: Hint (strategy=merge) is not supported in the query: no equi-join keys.
++----+----------------+-----+
+|year|average_distance|    #|
++----+----------------+-----+
+|2010|           2.393|11368|
+|2011|           2.536| 9614|
+|2012|           2.506| 6532|
+|2013|           2.456| 5838|
+|2014|           2.353| 4331|
+|2015|           2.388| 6763|
+|2016|           2.429| 8100|
+|2017|           2.392| 7786|
+|2018|           2.409| 7413|
+|2019|            2.43| 7129|
+|2020|           2.269| 2248|
+|2021|           2.446| 7150|
+|2022|           2.219| 5831|
+|2023|           2.267| 8896|
++----+----------------+-----+
+
+24/01/22 14:07:22 WARN HintErrorLogger: Hint (strategy=merge) is not supported in the query: no equi-join keys.
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [year#158 ASC NULLS FIRST], true, 0
+   +- Exchange rangepartitioning(year#158 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=2581]
+      +- HashAggregate(keys=[year#158], functions=[avg(Distance#533), count(DR_NO#0)])
+         +- Exchange hashpartitioning(year#158, 200), ENSURE_REQUIREMENTS, [plan_id=2578]
+            +- HashAggregate(keys=[year#158], functions=[partial_avg(Distance#533), partial_count(DR_NO#0)])
+               +- Project [DR_NO#0, year#158, Distance#533]
+                  +- Filter ((isnotnull(Distance#533) AND isnotnull(min_distance#553)) AND (Distance#533 = min_distance#553))
+                     +- Window [min(Distance#533) windowspecdefinition(DR_NO#0, specifiedwindowframe(RowFrame, unboundedpreceding$(), unboundedfollowing$())) AS min_distance#553], [DR_NO#0]
+                        +- Sort [DR_NO#0 ASC NULLS FIRST], false, 0
+                           +- Exchange hashpartitioning(DR_NO#0, 200), ENSURE_REQUIREMENTS, [plan_id=2571]
+                              +- Project [DR_NO#0, year#158, pythonUDF0#724 AS Distance#533]
+                                 +- BatchEvalPython [haversine_distance(LAT#26, LON#27, Y#119, X#118)#532], [pythonUDF0#724]
+                                    +- BroadcastNestedLoopJoin BuildRight, Inner
+                                       :- Union
+                                       :  :- Project [DR_NO#0, year(cast(gettimestamp(DATE OCC#2, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) AS year#158, LAT#26, LON#27]
+                                       :  :  +- Filter (((((isnotnull(LAT#26) AND isnotnull(LON#27)) AND isnotnull(Weapon Used Cd#16)) AND NOT (LAT#26 = 0.0)) AND NOT (LON#27 = 0.0)) AND StartsWith(Weapon Used Cd#16, 1))
+                                       :  :     +- FileScan csv [DR_NO#0,DATE OCC#2,Weapon Used Cd#16,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(LAT#26), isnotnull(LON#27), isnotnull(Weapon Used Cd#16), NOT (LAT#26 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,DATE OCC:string,Weapon Used Cd:string,LAT:double,LON:double>
+                                       :  +- Project [DR_NO#56, year(cast(gettimestamp(DATE OCC#58, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) AS year#723, LAT#82, LON#83]
+                                       :     +- Filter (((((isnotnull(LAT#82) AND isnotnull(LON#83)) AND isnotnull(Weapon Used Cd#72)) AND NOT (LAT#82 = 0.0)) AND NOT (LON#83 = 0.0)) AND StartsWith(Weapon Used Cd#72, 1))
+                                       :        +- FileScan csv [DR_NO#56,DATE OCC#58,Weapon Used Cd#72,LAT#82,LON#83] Batched: false, DataFilters: [isnotnull(LAT#82), isnotnull(LON#83), isnotnull(Weapon Used Cd#72), NOT (LAT#82 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,DATE OCC:string,Weapon Used Cd:string,LAT:double,LON:double>
+                                       +- BroadcastExchange IdentityBroadcastMode, [plan_id=2566]
+                                          +- FileScan csv [X#118,Y#119] Batched: false, DataFilters: [], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/LAPD_Police_St..., PartitionFilters: [], PushedFilters: [], ReadSchema: struct<X:double,Y:double>
+
+
+Q4 2b
+24/01/22 14:07:22 WARN HintErrorLogger: Hint (strategy=merge) is not supported in the query: no equi-join keys.
++---------------+----------------+-----+
+|       division|average_distance|    #|
++---------------+----------------+-----+
+|    77TH STREET|            1.74|11505|
+|      SOUTHWEST|           2.252|10637|
+|      SOUTHEAST|           2.221| 9583|
+|       WILSHIRE|           2.445| 6234|
+|     HOLLENBECK|           2.647| 6160|
+|         NEWTON|           1.563| 5980|
+|         HARBOR|           3.899| 5308|
+|      HOLLYWOOD|            2.01| 5146|
+|        OLYMPIC|           1.678| 4713|
+|        RAMPART|           1.395| 4682|
+|       VAN NUYS|           2.937| 4502|
+|       FOOTHILL|           3.561| 3971|
+|        CENTRAL|           1.013| 3419|
+|      NORTHEAST|           3.766| 3100|
+|NORTH HOLLYWOOD|            2.71| 3028|
+|    WEST VALLEY|           2.759| 2697|
+|        MISSION|            3.82| 2418|
+|        PACIFIC|            3.66| 1978|
+|        TOPANGA|           3.008| 1880|
+|     DEVONSHIRE|           2.978| 1081|
++---------------+----------------+-----+
+only showing top 20 rows
+
+24/01/22 14:07:25 WARN HintErrorLogger: Hint (strategy=merge) is not supported in the query: no equi-join keys.
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [##588L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(##588L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=2980]
+      +- HashAggregate(keys=[division#121], functions=[avg(Distance#533), count(DR_NO#0)])
+         +- Exchange hashpartitioning(division#121, 200), ENSURE_REQUIREMENTS, [plan_id=2977]
+            +- HashAggregate(keys=[division#121], functions=[partial_avg(Distance#533), partial_count(DR_NO#0)])
+               +- Project [DR_NO#0, division#121, Distance#533]
+                  +- Filter ((isnotnull(Distance#533) AND isnotnull(min_distance#553)) AND (Distance#533 = min_distance#553))
+                     +- Window [min(Distance#533) windowspecdefinition(DR_NO#0, specifiedwindowframe(RowFrame, unboundedpreceding$(), unboundedfollowing$())) AS min_distance#553], [DR_NO#0]
+                        +- Sort [DR_NO#0 ASC NULLS FIRST], false, 0
+                           +- Exchange hashpartitioning(DR_NO#0, 200), ENSURE_REQUIREMENTS, [plan_id=2970]
+                              +- Project [DR_NO#0, division#121, pythonUDF0#767 AS Distance#533]
+                                 +- BatchEvalPython [haversine_distance(LAT#26, LON#27, Y#119, X#118)#532], [pythonUDF0#767]
+                                    +- BroadcastNestedLoopJoin BuildRight, Inner
+                                       :- Union
+                                       :  :- Project [DR_NO#0, LAT#26, LON#27]
+                                       :  :  +- Filter (((((isnotnull(LAT#26) AND isnotnull(LON#27)) AND isnotnull(Weapon Used Cd#16)) AND NOT (LAT#26 = 0.0)) AND NOT (LON#27 = 0.0)) AND StartsWith(Weapon Used Cd#16, 1))
+                                       :  :     +- FileScan csv [DR_NO#0,Weapon Used Cd#16,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(LAT#26), isnotnull(LON#27), isnotnull(Weapon Used Cd#16), NOT (LAT#26 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,Weapon Used Cd:string,LAT:double,LON:double>
+                                       :  +- Project [DR_NO#56, LAT#82, LON#83]
+                                       :     +- Filter (((((isnotnull(LAT#82) AND isnotnull(LON#83)) AND isnotnull(Weapon Used Cd#72)) AND NOT (LAT#82 = 0.0)) AND NOT (LON#83 = 0.0)) AND StartsWith(Weapon Used Cd#72, 1))
+                                       :        +- FileScan csv [DR_NO#56,Weapon Used Cd#72,LAT#82,LON#83] Batched: false, DataFilters: [isnotnull(LAT#82), isnotnull(LON#83), isnotnull(Weapon Used Cd#72), NOT (LAT#82 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,Weapon Used Cd:string,LAT:double,LON:double>
+                                       +- BroadcastExchange IdentityBroadcastMode, [plan_id=2965]
+                                          +- FileScan csv [X#118,Y#119,division#121] Batched: false, DataFilters: [], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/LAPD_Police_St..., PartitionFilters: [], PushedFilters: [], ReadSchema: struct<X:double,Y:double,division:string>
+
+
+Time elapsed: 46.707449197769165
+Time needed: 14.218791961669922
+
+
+==========Shuffle Hash Join==========
+
+Q4 1a
++----+----------------+-----+
+|year|average_distance|    #|
++----+----------------+-----+
+|2010|           2.776|11368|
+|2011|           2.857| 9614|
+|2012|           2.836| 6532|
+|2013|           2.826| 5838|
+|2014|           2.734| 4331|
+|2015|           2.706| 6763|
+|2016|           2.718| 8100|
+|2017|           2.724| 7786|
+|2018|           2.733| 7413|
+|2019|            2.74| 7129|
+|2020|            2.49| 2248|
+|2021|           2.682| 7150|
+|2022|           2.486| 5831|
+|2023|           2.548| 8896|
++----+----------------+-----+
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [year#158 ASC NULLS FIRST], true, 0
+   +- Exchange rangepartitioning(year#158 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=3326]
+      +- HashAggregate(keys=[year#158], functions=[avg(Distance#778), count(DR_NO#0)])
+         +- Exchange hashpartitioning(year#158, 200), ENSURE_REQUIREMENTS, [plan_id=3323]
+            +- HashAggregate(keys=[year#158], functions=[partial_avg(Distance#778), partial_count(DR_NO#0)])
+               +- Project [DR_NO#0, year#158, pythonUDF0#935 AS Distance#778]
+                  +- BatchEvalPython [haversine_distance(LAT#26, LON#27, Y#119, X#118)#777], [pythonUDF0#935]
+                     +- Project [DR_NO#0, year#158, LAT#26, LON#27, X#118, Y#119]
+                        +- ShuffledHashJoin [AREA#4], [AREA#123], Inner, BuildRight
+                           :- Exchange hashpartitioning(AREA#4, 200), ENSURE_REQUIREMENTS, [plan_id=3315]
+                           :  +- Union
+                           :     :- Project [DR_NO#0, year(cast(gettimestamp(DATE OCC#2, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) AS year#158, AREA#4, LAT#26, LON#27]
+                           :     :  +- Filter ((((((isnotnull(LAT#26) AND isnotnull(LON#27)) AND isnotnull(Weapon Used Cd#16)) AND NOT (LAT#26 = 0.0)) AND NOT (LON#27 = 0.0)) AND StartsWith(Weapon Used Cd#16, 1)) AND isnotnull(AREA#4))
+                           :     :     +- FileScan csv [DR_NO#0,DATE OCC#2,AREA#4,Weapon Used Cd#16,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(LAT#26), isnotnull(LON#27), isnotnull(Weapon Used Cd#16), NOT (LAT#26 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,DATE OCC:string,AREA:int,Weapon Used Cd:string,LAT:double,LON:double>
+                           :     +- Project [DR_NO#56, year(cast(gettimestamp(DATE OCC#58, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) AS year#934, AREA#60, LAT#82, LON#83]
+                           :        +- Filter ((((((isnotnull(LAT#82) AND isnotnull(LON#83)) AND isnotnull(Weapon Used Cd#72)) AND NOT (LAT#82 = 0.0)) AND NOT (LON#83 = 0.0)) AND StartsWith(Weapon Used Cd#72, 1)) AND isnotnull(AREA#60))
+                           :           +- FileScan csv [DR_NO#56,DATE OCC#58,AREA#60,Weapon Used Cd#72,LAT#82,LON#83] Batched: false, DataFilters: [isnotnull(LAT#82), isnotnull(LON#83), isnotnull(Weapon Used Cd#72), NOT (LAT#82 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,DATE OCC:string,AREA:int,Weapon Used Cd:string,LAT:double,LON:double>
+                           +- Exchange hashpartitioning(AREA#123, 200), ENSURE_REQUIREMENTS, [plan_id=3316]
+                              +- Filter isnotnull(AREA#123)
+                                 +- FileScan csv [X#118,Y#119,AREA#123] Batched: false, DataFilters: [isnotnull(AREA#123)], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/LAPD_Police_St..., PartitionFilters: [], PushedFilters: [IsNotNull(AREA)], ReadSchema: struct<X:double,Y:double,AREA:int>
+
+
+Q4 1b
++---------------+----------------+-----+
+|       division|average_distance|    #|
++---------------+----------------+-----+
+|    77TH STREET|           2.731|14625|
+|      SOUTHEAST|           2.109|10388|
+|      SOUTHWEST|           2.697| 8633|
+|         NEWTON|           1.994| 7926|
+|     HOLLENBECK|           2.653| 6104|
+|         HARBOR|           4.086| 5430|
+|        RAMPART|           1.579| 4995|
+|        MISSION|           4.728| 3924|
+|      NORTHEAST|            3.92| 3861|
+|        OLYMPIC|           1.855| 3554|
+|        CENTRAL|           1.136| 3477|
+|      HOLLYWOOD|           1.454| 3407|
+|       WILSHIRE|           2.304| 3394|
+|       FOOTHILL|           3.755| 3249|
+|NORTH HOLLYWOOD|           2.704| 3036|
+|    WEST VALLEY|           3.509| 2833|
+|       VAN NUYS|           2.208| 2661|
+|        PACIFIC|           3.705| 2087|
+|     DEVONSHIRE|           3.954| 2039|
+|        TOPANGA|           3.457| 1860|
++---------------+----------------+-----+
+only showing top 20 rows
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [##817L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(##817L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=3672]
+      +- HashAggregate(keys=[division#121], functions=[avg(Distance#778), count(DR_NO#0)])
+         +- Exchange hashpartitioning(division#121, 200), ENSURE_REQUIREMENTS, [plan_id=3669]
+            +- HashAggregate(keys=[division#121], functions=[partial_avg(Distance#778), partial_count(DR_NO#0)])
+               +- Project [DR_NO#0, division#121, pythonUDF0#979 AS Distance#778]
+                  +- BatchEvalPython [haversine_distance(LAT#26, LON#27, Y#119, X#118)#777], [pythonUDF0#979]
+                     +- Project [DR_NO#0, LAT#26, LON#27, X#118, Y#119, division#121]
+                        +- ShuffledHashJoin [AREA#4], [AREA#123], Inner, BuildRight
+                           :- Exchange hashpartitioning(AREA#4, 200), ENSURE_REQUIREMENTS, [plan_id=3661]
+                           :  +- Union
+                           :     :- Project [DR_NO#0, AREA#4, LAT#26, LON#27]
+                           :     :  +- Filter ((((((isnotnull(LAT#26) AND isnotnull(LON#27)) AND isnotnull(Weapon Used Cd#16)) AND NOT (LAT#26 = 0.0)) AND NOT (LON#27 = 0.0)) AND StartsWith(Weapon Used Cd#16, 1)) AND isnotnull(AREA#4))
+                           :     :     +- FileScan csv [DR_NO#0,AREA#4,Weapon Used Cd#16,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(LAT#26), isnotnull(LON#27), isnotnull(Weapon Used Cd#16), NOT (LAT#26 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,AREA:int,Weapon Used Cd:string,LAT:double,LON:double>
+                           :     +- Project [DR_NO#56, AREA#60, LAT#82, LON#83]
+                           :        +- Filter ((((((isnotnull(LAT#82) AND isnotnull(LON#83)) AND isnotnull(Weapon Used Cd#72)) AND NOT (LAT#82 = 0.0)) AND NOT (LON#83 = 0.0)) AND StartsWith(Weapon Used Cd#72, 1)) AND isnotnull(AREA#60))
+                           :           +- FileScan csv [DR_NO#56,AREA#60,Weapon Used Cd#72,LAT#82,LON#83] Batched: false, DataFilters: [isnotnull(LAT#82), isnotnull(LON#83), isnotnull(Weapon Used Cd#72), NOT (LAT#82 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,AREA:int,Weapon Used Cd:string,LAT:double,LON:double>
+                           +- Exchange hashpartitioning(AREA#123, 200), ENSURE_REQUIREMENTS, [plan_id=3662]
+                              +- Filter isnotnull(AREA#123)
+                                 +- FileScan csv [X#118,Y#119,division#121,AREA#123] Batched: false, DataFilters: [isnotnull(AREA#123)], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/LAPD_Police_St..., PartitionFilters: [], PushedFilters: [IsNotNull(AREA)], ReadSchema: struct<X:double,Y:double,division:string,AREA:int>
+
+
+Q4 2a
+24/01/22 14:07:31 WARN HintErrorLogger: Hint (strategy=shuffle_hash) is not supported in the query: no equi-join keys.
++----+----------------+-----+
+|year|average_distance|    #|
++----+----------------+-----+
+|2010|           2.393|11368|
+|2011|           2.536| 9614|
+|2012|           2.506| 6532|
+|2013|           2.456| 5838|
+|2014|           2.353| 4331|
+|2015|           2.388| 6763|
+|2016|           2.429| 8100|
+|2017|           2.392| 7786|
+|2018|           2.409| 7413|
+|2019|            2.43| 7129|
+|2020|           2.269| 2248|
+|2021|           2.446| 7150|
+|2022|           2.219| 5831|
+|2023|           2.267| 8896|
++----+----------------+-----+
+
+24/01/22 14:07:35 WARN HintErrorLogger: Hint (strategy=shuffle_hash) is not supported in the query: no equi-join keys.
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [year#158 ASC NULLS FIRST], true, 0
+   +- Exchange rangepartitioning(year#158 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=4071]
+      +- HashAggregate(keys=[year#158], functions=[avg(Distance#832), count(DR_NO#0)])
+         +- Exchange hashpartitioning(year#158, 200), ENSURE_REQUIREMENTS, [plan_id=4068]
+            +- HashAggregate(keys=[year#158], functions=[partial_avg(Distance#832), partial_count(DR_NO#0)])
+               +- Project [DR_NO#0, year#158, Distance#832]
+                  +- Filter ((isnotnull(Distance#832) AND isnotnull(min_distance#852)) AND (Distance#832 = min_distance#852))
+                     +- Window [min(Distance#832) windowspecdefinition(DR_NO#0, specifiedwindowframe(RowFrame, unboundedpreceding$(), unboundedfollowing$())) AS min_distance#852], [DR_NO#0]
+                        +- Sort [DR_NO#0 ASC NULLS FIRST], false, 0
+                           +- Exchange hashpartitioning(DR_NO#0, 200), ENSURE_REQUIREMENTS, [plan_id=4061]
+                              +- Project [DR_NO#0, year#158, pythonUDF0#1023 AS Distance#832]
+                                 +- BatchEvalPython [haversine_distance(LAT#26, LON#27, Y#119, X#118)#831], [pythonUDF0#1023]
+                                    +- BroadcastNestedLoopJoin BuildRight, Inner
+                                       :- Union
+                                       :  :- Project [DR_NO#0, year(cast(gettimestamp(DATE OCC#2, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) AS year#158, LAT#26, LON#27]
+                                       :  :  +- Filter (((((isnotnull(LAT#26) AND isnotnull(LON#27)) AND isnotnull(Weapon Used Cd#16)) AND NOT (LAT#26 = 0.0)) AND NOT (LON#27 = 0.0)) AND StartsWith(Weapon Used Cd#16, 1))
+                                       :  :     +- FileScan csv [DR_NO#0,DATE OCC#2,Weapon Used Cd#16,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(LAT#26), isnotnull(LON#27), isnotnull(Weapon Used Cd#16), NOT (LAT#26 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,DATE OCC:string,Weapon Used Cd:string,LAT:double,LON:double>
+                                       :  +- Project [DR_NO#56, year(cast(gettimestamp(DATE OCC#58, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) AS year#1022, LAT#82, LON#83]
+                                       :     +- Filter (((((isnotnull(LAT#82) AND isnotnull(LON#83)) AND isnotnull(Weapon Used Cd#72)) AND NOT (LAT#82 = 0.0)) AND NOT (LON#83 = 0.0)) AND StartsWith(Weapon Used Cd#72, 1))
+                                       :        +- FileScan csv [DR_NO#56,DATE OCC#58,Weapon Used Cd#72,LAT#82,LON#83] Batched: false, DataFilters: [isnotnull(LAT#82), isnotnull(LON#83), isnotnull(Weapon Used Cd#72), NOT (LAT#82 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,DATE OCC:string,Weapon Used Cd:string,LAT:double,LON:double>
+                                       +- BroadcastExchange IdentityBroadcastMode, [plan_id=4056]
+                                          +- FileScan csv [X#118,Y#119] Batched: false, DataFilters: [], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/LAPD_Police_St..., PartitionFilters: [], PushedFilters: [], ReadSchema: struct<X:double,Y:double>
+
+
+Q4 2b
+24/01/22 14:07:35 WARN HintErrorLogger: Hint (strategy=shuffle_hash) is not supported in the query: no equi-join keys.
++---------------+----------------+-----+
+|       division|average_distance|    #|
++---------------+----------------+-----+
+|    77TH STREET|            1.74|11505|
+|      SOUTHWEST|           2.252|10637|
+|      SOUTHEAST|           2.221| 9583|
+|       WILSHIRE|           2.445| 6234|
+|     HOLLENBECK|           2.647| 6160|
+|         NEWTON|           1.563| 5980|
+|         HARBOR|           3.899| 5308|
+|      HOLLYWOOD|            2.01| 5146|
+|        OLYMPIC|           1.678| 4713|
+|        RAMPART|           1.395| 4682|
+|       VAN NUYS|           2.937| 4502|
+|       FOOTHILL|           3.561| 3971|
+|        CENTRAL|           1.013| 3419|
+|      NORTHEAST|           3.766| 3100|
+|NORTH HOLLYWOOD|            2.71| 3028|
+|    WEST VALLEY|           2.759| 2697|
+|        MISSION|            3.82| 2418|
+|        PACIFIC|            3.66| 1978|
+|        TOPANGA|           3.008| 1880|
+|     DEVONSHIRE|           2.978| 1081|
++---------------+----------------+-----+
+only showing top 20 rows
+
+24/01/22 14:07:39 WARN HintErrorLogger: Hint (strategy=shuffle_hash) is not supported in the query: no equi-join keys.
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [##887L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(##887L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=4470]
+      +- HashAggregate(keys=[division#121], functions=[avg(Distance#832), count(DR_NO#0)])
+         +- Exchange hashpartitioning(division#121, 200), ENSURE_REQUIREMENTS, [plan_id=4467]
+            +- HashAggregate(keys=[division#121], functions=[partial_avg(Distance#832), partial_count(DR_NO#0)])
+               +- Project [DR_NO#0, division#121, Distance#832]
+                  +- Filter ((isnotnull(Distance#832) AND isnotnull(min_distance#852)) AND (Distance#832 = min_distance#852))
+                     +- Window [min(Distance#832) windowspecdefinition(DR_NO#0, specifiedwindowframe(RowFrame, unboundedpreceding$(), unboundedfollowing$())) AS min_distance#852], [DR_NO#0]
+                        +- Sort [DR_NO#0 ASC NULLS FIRST], false, 0
+                           +- Exchange hashpartitioning(DR_NO#0, 200), ENSURE_REQUIREMENTS, [plan_id=4460]
+                              +- Project [DR_NO#0, division#121, pythonUDF0#1066 AS Distance#832]
+                                 +- BatchEvalPython [haversine_distance(LAT#26, LON#27, Y#119, X#118)#831], [pythonUDF0#1066]
+                                    +- BroadcastNestedLoopJoin BuildRight, Inner
+                                       :- Union
+                                       :  :- Project [DR_NO#0, LAT#26, LON#27]
+                                       :  :  +- Filter (((((isnotnull(LAT#26) AND isnotnull(LON#27)) AND isnotnull(Weapon Used Cd#16)) AND NOT (LAT#26 = 0.0)) AND NOT (LON#27 = 0.0)) AND StartsWith(Weapon Used Cd#16, 1))
+                                       :  :     +- FileScan csv [DR_NO#0,Weapon Used Cd#16,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(LAT#26), isnotnull(LON#27), isnotnull(Weapon Used Cd#16), NOT (LAT#26 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,Weapon Used Cd:string,LAT:double,LON:double>
+                                       :  +- Project [DR_NO#56, LAT#82, LON#83]
+                                       :     +- Filter (((((isnotnull(LAT#82) AND isnotnull(LON#83)) AND isnotnull(Weapon Used Cd#72)) AND NOT (LAT#82 = 0.0)) AND NOT (LON#83 = 0.0)) AND StartsWith(Weapon Used Cd#72, 1))
+                                       :        +- FileScan csv [DR_NO#56,Weapon Used Cd#72,LAT#82,LON#83] Batched: false, DataFilters: [isnotnull(LAT#82), isnotnull(LON#83), isnotnull(Weapon Used Cd#72), NOT (LAT#82 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,Weapon Used Cd:string,LAT:double,LON:double>
+                                       +- BroadcastExchange IdentityBroadcastMode, [plan_id=4455]
+                                          +- FileScan csv [X#118,Y#119,division#121] Batched: false, DataFilters: [], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/LAPD_Police_St..., PartitionFilters: [], PushedFilters: [], ReadSchema: struct<X:double,Y:double,division:string>
+
+
+Time elapsed: 60.12023568153381
+Time needed: 13.412757396697998
+
+
+==========Shuffle Replicate NL Join==========
+
+Q4 1a
++----+----------------+-----+
+|year|average_distance|    #|
++----+----------------+-----+
+|2010|           2.776|11368|
+|2011|           2.857| 9614|
+|2012|           2.836| 6532|
+|2013|           2.826| 5838|
+|2014|           2.734| 4331|
+|2015|           2.706| 6763|
+|2016|           2.718| 8100|
+|2017|           2.724| 7786|
+|2018|           2.733| 7413|
+|2019|            2.74| 7129|
+|2020|            2.49| 2248|
+|2021|           2.682| 7150|
+|2022|           2.486| 5831|
+|2023|           2.548| 8896|
++----+----------------+-----+
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [year#158 ASC NULLS FIRST], true, 0
+   +- Exchange rangepartitioning(year#158 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=4695]
+      +- HashAggregate(keys=[year#158], functions=[avg(Distance#1077), count(DR_NO#0)])
+         +- Exchange hashpartitioning(year#158, 200), ENSURE_REQUIREMENTS, [plan_id=4692]
+            +- HashAggregate(keys=[year#158], functions=[partial_avg(Distance#1077), partial_count(DR_NO#0)])
+               +- Project [DR_NO#0, year#158, pythonUDF0#1232 AS Distance#1077]
+                  +- BatchEvalPython [haversine_distance(LAT#26, LON#27, Y#119, X#118)#1076], [pythonUDF0#1232]
+                     +- Project [DR_NO#0, year#158, LAT#26, LON#27, X#118, Y#119]
+                        +- CartesianProduct (AREA#4 = AREA#123)
+                           :- Union
+                           :  :- Project [DR_NO#0, year(cast(gettimestamp(DATE OCC#2, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) AS year#158, AREA#4, LAT#26, LON#27]
+                           :  :  +- Filter ((((((isnotnull(LAT#26) AND isnotnull(LON#27)) AND isnotnull(Weapon Used Cd#16)) AND NOT (LAT#26 = 0.0)) AND NOT (LON#27 = 0.0)) AND StartsWith(Weapon Used Cd#16, 1)) AND isnotnull(AREA#4))
+                           :  :     +- FileScan csv [DR_NO#0,DATE OCC#2,AREA#4,Weapon Used Cd#16,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(LAT#26), isnotnull(LON#27), isnotnull(Weapon Used Cd#16), NOT (LAT#26 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,DATE OCC:string,AREA:int,Weapon Used Cd:string,LAT:double,LON:double>
+                           :  +- Project [DR_NO#56, year(cast(gettimestamp(DATE OCC#58, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) AS year#1231, AREA#60, LAT#82, LON#83]
+                           :     +- Filter ((((((isnotnull(LAT#82) AND isnotnull(LON#83)) AND isnotnull(Weapon Used Cd#72)) AND NOT (LAT#82 = 0.0)) AND NOT (LON#83 = 0.0)) AND StartsWith(Weapon Used Cd#72, 1)) AND isnotnull(AREA#60))
+                           :        +- FileScan csv [DR_NO#56,DATE OCC#58,AREA#60,Weapon Used Cd#72,LAT#82,LON#83] Batched: false, DataFilters: [isnotnull(LAT#82), isnotnull(LON#83), isnotnull(Weapon Used Cd#72), NOT (LAT#82 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,DATE OCC:string,AREA:int,Weapon Used Cd:string,LAT:double,LON:double>
+                           +- Filter isnotnull(AREA#123)
+                              +- FileScan csv [X#118,Y#119,AREA#123] Batched: false, DataFilters: [isnotnull(AREA#123)], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/LAPD_Police_St..., PartitionFilters: [], PushedFilters: [IsNotNull(AREA)], ReadSchema: struct<X:double,Y:double,AREA:int>
+
+
+Q4 1b
++---------------+----------------+-----+
+|       division|average_distance|    #|
++---------------+----------------+-----+
+|    77TH STREET|           2.731|14625|
+|      SOUTHEAST|           2.109|10388|
+|      SOUTHWEST|           2.697| 8633|
+|         NEWTON|           1.994| 7926|
+|     HOLLENBECK|           2.653| 6104|
+|         HARBOR|           4.086| 5430|
+|        RAMPART|           1.579| 4995|
+|        MISSION|           4.728| 3924|
+|      NORTHEAST|            3.92| 3861|
+|        OLYMPIC|           1.855| 3554|
+|        CENTRAL|           1.136| 3477|
+|      HOLLYWOOD|           1.454| 3407|
+|       WILSHIRE|           2.304| 3394|
+|       FOOTHILL|           3.755| 3249|
+|NORTH HOLLYWOOD|           2.704| 3036|
+|    WEST VALLEY|           3.509| 2833|
+|       VAN NUYS|           2.208| 2661|
+|        PACIFIC|           3.705| 2087|
+|     DEVONSHIRE|           3.954| 2039|
+|        TOPANGA|           3.457| 1860|
++---------------+----------------+-----+
+only showing top 20 rows
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [##1116L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(##1116L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=4920]
+      +- HashAggregate(keys=[division#121], functions=[avg(Distance#1077), count(DR_NO#0)])
+         +- Exchange hashpartitioning(division#121, 200), ENSURE_REQUIREMENTS, [plan_id=4917]
+            +- HashAggregate(keys=[division#121], functions=[partial_avg(Distance#1077), partial_count(DR_NO#0)])
+               +- Project [DR_NO#0, division#121, pythonUDF0#1274 AS Distance#1077]
+                  +- BatchEvalPython [haversine_distance(LAT#26, LON#27, Y#119, X#118)#1076], [pythonUDF0#1274]
+                     +- Project [DR_NO#0, LAT#26, LON#27, X#118, Y#119, division#121]
+                        +- CartesianProduct (AREA#4 = AREA#123)
+                           :- Union
+                           :  :- Project [DR_NO#0, AREA#4, LAT#26, LON#27]
+                           :  :  +- Filter ((((((isnotnull(LAT#26) AND isnotnull(LON#27)) AND isnotnull(Weapon Used Cd#16)) AND NOT (LAT#26 = 0.0)) AND NOT (LON#27 = 0.0)) AND StartsWith(Weapon Used Cd#16, 1)) AND isnotnull(AREA#4))
+                           :  :     +- FileScan csv [DR_NO#0,AREA#4,Weapon Used Cd#16,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(LAT#26), isnotnull(LON#27), isnotnull(Weapon Used Cd#16), NOT (LAT#26 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,AREA:int,Weapon Used Cd:string,LAT:double,LON:double>
+                           :  +- Project [DR_NO#56, AREA#60, LAT#82, LON#83]
+                           :     +- Filter ((((((isnotnull(LAT#82) AND isnotnull(LON#83)) AND isnotnull(Weapon Used Cd#72)) AND NOT (LAT#82 = 0.0)) AND NOT (LON#83 = 0.0)) AND StartsWith(Weapon Used Cd#72, 1)) AND isnotnull(AREA#60))
+                           :        +- FileScan csv [DR_NO#56,AREA#60,Weapon Used Cd#72,LAT#82,LON#83] Batched: false, DataFilters: [isnotnull(LAT#82), isnotnull(LON#83), isnotnull(Weapon Used Cd#72), NOT (LAT#82 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,AREA:int,Weapon Used Cd:string,LAT:double,LON:double>
+                           +- Filter isnotnull(AREA#123)
+                              +- FileScan csv [X#118,Y#119,division#121,AREA#123] Batched: false, DataFilters: [isnotnull(AREA#123)], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/LAPD_Police_St..., PartitionFilters: [], PushedFilters: [IsNotNull(AREA)], ReadSchema: struct<X:double,Y:double,division:string,AREA:int>
+
+
+Q4 2a
++----+----------------+-----+
+|year|average_distance|    #|
++----+----------------+-----+
+|2010|           2.393|11368|
+|2011|           2.536| 9614|
+|2012|           2.506| 6532|
+|2013|           2.456| 5838|
+|2014|           2.353| 4331|
+|2015|           2.388| 6763|
+|2016|           2.429| 8100|
+|2017|           2.392| 7786|
+|2018|           2.409| 7413|
+|2019|            2.43| 7129|
+|2020|           2.269| 2248|
+|2021|           2.446| 7150|
+|2022|           2.219| 5831|
+|2023|           2.267| 8896|
++----+----------------+-----+
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [year#158 ASC NULLS FIRST], true, 0
+   +- Exchange rangepartitioning(year#158 ASC NULLS FIRST, 200), ENSURE_REQUIREMENTS, [plan_id=5221]
+      +- HashAggregate(keys=[year#158], functions=[avg(Distance#1131), count(DR_NO#0)])
+         +- Exchange hashpartitioning(year#158, 200), ENSURE_REQUIREMENTS, [plan_id=5218]
+            +- HashAggregate(keys=[year#158], functions=[partial_avg(Distance#1131), partial_count(DR_NO#0)])
+               +- Project [DR_NO#0, year#158, Distance#1131]
+                  +- Filter ((isnotnull(Distance#1131) AND isnotnull(min_distance#1151)) AND (Distance#1131 = min_distance#1151))
+                     +- Window [min(Distance#1131) windowspecdefinition(DR_NO#0, specifiedwindowframe(RowFrame, unboundedpreceding$(), unboundedfollowing$())) AS min_distance#1151], [DR_NO#0]
+                        +- Sort [DR_NO#0 ASC NULLS FIRST], false, 0
+                           +- Exchange hashpartitioning(DR_NO#0, 200), ENSURE_REQUIREMENTS, [plan_id=5211]
+                              +- Project [DR_NO#0, year#158, pythonUDF0#1316 AS Distance#1131]
+                                 +- BatchEvalPython [haversine_distance(LAT#26, LON#27, Y#119, X#118)#1130], [pythonUDF0#1316]
+                                    +- CartesianProduct
+                                       :- Union
+                                       :  :- Project [DR_NO#0, year(cast(gettimestamp(DATE OCC#2, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) AS year#158, LAT#26, LON#27]
+                                       :  :  +- Filter (((((isnotnull(LAT#26) AND isnotnull(LON#27)) AND isnotnull(Weapon Used Cd#16)) AND NOT (LAT#26 = 0.0)) AND NOT (LON#27 = 0.0)) AND StartsWith(Weapon Used Cd#16, 1))
+                                       :  :     +- FileScan csv [DR_NO#0,DATE OCC#2,Weapon Used Cd#16,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(LAT#26), isnotnull(LON#27), isnotnull(Weapon Used Cd#16), NOT (LAT#26 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,DATE OCC:string,Weapon Used Cd:string,LAT:double,LON:double>
+                                       :  +- Project [DR_NO#56, year(cast(gettimestamp(DATE OCC#58, MM/dd/yyyy hh:mm:ss a, TimestampType, Some(Etc/UTC), false) as date)) AS year#1315, LAT#82, LON#83]
+                                       :     +- Filter (((((isnotnull(LAT#82) AND isnotnull(LON#83)) AND isnotnull(Weapon Used Cd#72)) AND NOT (LAT#82 = 0.0)) AND NOT (LON#83 = 0.0)) AND StartsWith(Weapon Used Cd#72, 1))
+                                       :        +- FileScan csv [DR_NO#56,DATE OCC#58,Weapon Used Cd#72,LAT#82,LON#83] Batched: false, DataFilters: [isnotnull(LAT#82), isnotnull(LON#83), isnotnull(Weapon Used Cd#72), NOT (LAT#82 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,DATE OCC:string,Weapon Used Cd:string,LAT:double,LON:double>
+                                       +- FileScan csv [X#118,Y#119] Batched: false, DataFilters: [], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/LAPD_Police_St..., PartitionFilters: [], PushedFilters: [], ReadSchema: struct<X:double,Y:double>
+
+
+Q4 2b
++---------------+----------------+-----+
+|       division|average_distance|    #|
++---------------+----------------+-----+
+|    77TH STREET|            1.74|11505|
+|      SOUTHWEST|           2.252|10637|
+|      SOUTHEAST|           2.221| 9583|
+|       WILSHIRE|           2.445| 6234|
+|     HOLLENBECK|           2.647| 6160|
+|         NEWTON|           1.563| 5980|
+|         HARBOR|           3.899| 5308|
+|      HOLLYWOOD|            2.01| 5146|
+|        OLYMPIC|           1.678| 4713|
+|        RAMPART|           1.395| 4682|
+|       VAN NUYS|           2.937| 4502|
+|       FOOTHILL|           3.561| 3971|
+|        CENTRAL|           1.013| 3419|
+|      NORTHEAST|           3.766| 3100|
+|NORTH HOLLYWOOD|            2.71| 3028|
+|    WEST VALLEY|           2.759| 2697|
+|        MISSION|            3.82| 2418|
+|        PACIFIC|            3.66| 1978|
+|        TOPANGA|           3.008| 1880|
+|     DEVONSHIRE|           2.978| 1081|
++---------------+----------------+-----+
+only showing top 20 rows
+
+== Physical Plan ==
+AdaptiveSparkPlan isFinalPlan=false
++- Sort [##1186L DESC NULLS LAST], true, 0
+   +- Exchange rangepartitioning(##1186L DESC NULLS LAST, 200), ENSURE_REQUIREMENTS, [plan_id=5522]
+      +- HashAggregate(keys=[division#121], functions=[avg(Distance#1131), count(DR_NO#0)])
+         +- Exchange hashpartitioning(division#121, 200), ENSURE_REQUIREMENTS, [plan_id=5519]
+            +- HashAggregate(keys=[division#121], functions=[partial_avg(Distance#1131), partial_count(DR_NO#0)])
+               +- Project [DR_NO#0, division#121, Distance#1131]
+                  +- Filter ((isnotnull(Distance#1131) AND isnotnull(min_distance#1151)) AND (Distance#1131 = min_distance#1151))
+                     +- Window [min(Distance#1131) windowspecdefinition(DR_NO#0, specifiedwindowframe(RowFrame, unboundedpreceding$(), unboundedfollowing$())) AS min_distance#1151], [DR_NO#0]
+                        +- Sort [DR_NO#0 ASC NULLS FIRST], false, 0
+                           +- Exchange hashpartitioning(DR_NO#0, 200), ENSURE_REQUIREMENTS, [plan_id=5512]
+                              +- Project [DR_NO#0, division#121, pythonUDF0#1357 AS Distance#1131]
+                                 +- BatchEvalPython [haversine_distance(LAT#26, LON#27, Y#119, X#118)#1130], [pythonUDF0#1357]
+                                    +- CartesianProduct
+                                       :- Union
+                                       :  :- Project [DR_NO#0, LAT#26, LON#27]
+                                       :  :  +- Filter (((((isnotnull(LAT#26) AND isnotnull(LON#27)) AND isnotnull(Weapon Used Cd#16)) AND NOT (LAT#26 = 0.0)) AND NOT (LON#27 = 0.0)) AND StartsWith(Weapon Used Cd#16, 1))
+                                       :  :     +- FileScan csv [DR_NO#0,Weapon Used Cd#16,LAT#26,LON#27] Batched: false, DataFilters: [isnotnull(LAT#26), isnotnull(LON#27), isnotnull(Weapon Used Cd#16), NOT (LAT#26 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_1.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,Weapon Used Cd:string,LAT:double,LON:double>
+                                       :  +- Project [DR_NO#56, LAT#82, LON#83]
+                                       :     +- Filter (((((isnotnull(LAT#82) AND isnotnull(LON#83)) AND isnotnull(Weapon Used Cd#72)) AND NOT (LAT#82 = 0.0)) AND NOT (LON#83 = 0.0)) AND StartsWith(Weapon Used Cd#72, 1))
+                                       :        +- FileScan csv [DR_NO#56,Weapon Used Cd#72,LAT#82,LON#83] Batched: false, DataFilters: [isnotnull(LAT#82), isnotnull(LON#83), isnotnull(Weapon Used Cd#72), NOT (LAT#82 = 0.0), NOT (LON..., Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/crime_data_2.csv], PartitionFilters: [], PushedFilters: [IsNotNull(LAT), IsNotNull(LON), IsNotNull(Weapon Used Cd), Not(EqualTo(LAT,0.0)), Not(EqualTo(LO..., ReadSchema: struct<DR_NO:string,Weapon Used Cd:string,LAT:double,LON:double>
+                                       +- FileScan csv [X#118,Y#119,division#121] Batched: false, DataFilters: [], Format: CSV, Location: InMemoryFileIndex(1 paths)[hdfs://okeanos-manager:54310/user/mark_deligiannis/data/LAPD_Police_St..., PartitionFilters: [], PushedFilters: [], ReadSchema: struct<X:double,Y:double,division:string>
+
+
+Time elapsed: 72.74678015708923
+Time needed: 12.626540422439575
+
+
